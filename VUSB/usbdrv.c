@@ -5,8 +5,10 @@
  * Tabsize: 4
  * Copyright: (c) 2005 by OBJECTIVE DEVELOPMENT Software GmbH
  * License: GNU GPL v2 (see License.txt), GNU GPL v3 or proprietary (CommercialLicense.txt)
+ * This Revision: $Id: usbdrv.c 763 2009-08-22 10:27:24Z cs $
  */
 
+#include "usbportability.h"
 #include "usbdrv.h"
 #include "oddebug.h"
 
@@ -43,10 +45,11 @@ uchar       usbCurrentDataToken;/* when we check data toggling to ignore duplica
 #endif
 
 /* USB status registers / not shared with asm code */
-usbMsgPtr_t         usbMsgPtr;      /* data to transmit next -- ROM or RAM address */
+uchar               *usbMsgPtr;     /* data to transmit next -- ROM or RAM address */
 static usbMsgLen_t  usbMsgLen = USB_NO_MSG; /* remaining number of bytes */
-uchar               usbMsgFlags;    /* flag values see USB_FLG_* */
+static uchar        usbMsgFlags;    /* flag values see below */
 
+#define USB_FLG_MSGPTR_IS_ROM   (1<<6)
 #define USB_FLG_USE_USER_RW     (1<<7)
 
 /*
@@ -64,7 +67,7 @@ optimizing hints:
 #if USB_CFG_DESCR_PROPS_STRING_0 == 0
 #undef USB_CFG_DESCR_PROPS_STRING_0
 #define USB_CFG_DESCR_PROPS_STRING_0    sizeof(usbDescriptorString0)
-PROGMEM const char usbDescriptorString0[] = { /* language descriptor */
+PROGMEM char const usbDescriptorString0[] = { /* language descriptor */
     4,          /* sizeof(usbDescriptorString0): length of descriptor in bytes */
     3,          /* descriptor type */
     0x09, 0x04, /* language index (0x0409 = US-English) */
@@ -74,7 +77,7 @@ PROGMEM const char usbDescriptorString0[] = { /* language descriptor */
 #if USB_CFG_DESCR_PROPS_STRING_VENDOR == 0 && USB_CFG_VENDOR_NAME_LEN
 #undef USB_CFG_DESCR_PROPS_STRING_VENDOR
 #define USB_CFG_DESCR_PROPS_STRING_VENDOR   sizeof(usbDescriptorStringVendor)
-PROGMEM const int  usbDescriptorStringVendor[] = {
+PROGMEM int  const usbDescriptorStringVendor[] = {
     USB_STRING_DESCRIPTOR_HEADER(USB_CFG_VENDOR_NAME_LEN),
     USB_CFG_VENDOR_NAME
 };
@@ -83,7 +86,7 @@ PROGMEM const int  usbDescriptorStringVendor[] = {
 #if USB_CFG_DESCR_PROPS_STRING_PRODUCT == 0 && USB_CFG_DEVICE_NAME_LEN
 #undef USB_CFG_DESCR_PROPS_STRING_PRODUCT
 #define USB_CFG_DESCR_PROPS_STRING_PRODUCT   sizeof(usbDescriptorStringDevice)
-PROGMEM const int  usbDescriptorStringDevice[] = {
+PROGMEM int  const usbDescriptorStringDevice[] = {
     USB_STRING_DESCRIPTOR_HEADER(USB_CFG_DEVICE_NAME_LEN),
     USB_CFG_DEVICE_NAME
 };
@@ -92,7 +95,7 @@ PROGMEM const int  usbDescriptorStringDevice[] = {
 #if USB_CFG_DESCR_PROPS_STRING_SERIAL_NUMBER == 0 && USB_CFG_SERIAL_NUMBER_LEN
 #undef USB_CFG_DESCR_PROPS_STRING_SERIAL_NUMBER
 #define USB_CFG_DESCR_PROPS_STRING_SERIAL_NUMBER    sizeof(usbDescriptorStringSerialNumber)
-PROGMEM const int usbDescriptorStringSerialNumber[] = {
+PROGMEM int const usbDescriptorStringSerialNumber[] = {
     USB_STRING_DESCRIPTOR_HEADER(USB_CFG_SERIAL_NUMBER_LEN),
     USB_CFG_SERIAL_NUMBER
 };
@@ -105,7 +108,7 @@ PROGMEM const int usbDescriptorStringSerialNumber[] = {
 #if USB_CFG_DESCR_PROPS_DEVICE == 0
 #undef USB_CFG_DESCR_PROPS_DEVICE
 #define USB_CFG_DESCR_PROPS_DEVICE  sizeof(usbDescriptorDevice)
-PROGMEM const char usbDescriptorDevice[] = {    /* USB device descriptor */
+PROGMEM char const usbDescriptorDevice[] = {    /* USB device descriptor */
     18,         /* sizeof(usbDescriptorDevice): length of descriptor in bytes */
     USBDESCR_DEVICE,        /* descriptor type */
     0x10, 0x01,             /* USB version supported */
@@ -148,7 +151,7 @@ PROGMEM const char usbDescriptorConfiguration[] = {    /* USB configuration desc
 #if USB_CFG_IS_SELF_POWERED
     (1 << 7) | USBATTR_SELFPOWER,       /* attributes */
 #else
-    (1 << 7) | USBATTR_REMOTEWAKE,      /* attributes */
+    (1 << 7),                           /* attributes */
 #endif
     USB_CFG_MAX_BUS_POWER/2,            /* max USB current in 2mA units */
 /* interface descriptor follows inline: */
@@ -168,8 +171,7 @@ PROGMEM const char usbDescriptorConfiguration[] = {    /* USB configuration desc
     0x00,       /* target country code */
     0x01,       /* number of HID Report (or other HID class) Descriptor infos to follow */
     0x22,       /* descriptor type: report */
-    (USB_CFG_HID_REPORT_DESCRIPTOR_LENGTH & 0xFF), /* descriptor length (low byte) */
-    ((USB_CFG_HID_REPORT_DESCRIPTOR_LENGTH >> 8) & 0xFF), /*            (high byte) */
+    USB_CFG_HID_REPORT_DESCRIPTOR_LENGTH, 0,  /* total length of report descriptor */
 #endif
 #if USB_CFG_HAVE_INTRIN_ENDPOINT    /* endpoint descriptor for endpoint 1 */
     7,          /* sizeof(usbDescrEndpoint) */
@@ -182,7 +184,7 @@ PROGMEM const char usbDescriptorConfiguration[] = {    /* USB configuration desc
 #if USB_CFG_HAVE_INTRIN_ENDPOINT3   /* endpoint descriptor for endpoint 3 */
     7,          /* sizeof(usbDescrEndpoint) */
     USBDESCR_ENDPOINT,  /* descriptor type = endpoint */
-    (char)(0x80 | USB_CFG_EP3_NUMBER), /* IN endpoint number 3 */
+    (char)0x83, /* IN endpoint number 1 */
     0x03,       /* attrib: Interrupt endpoint */
     8, 0,       /* maximum packet size */
     USB_CFG_INTR_POLL_INTERVAL, /* in ms */
@@ -219,7 +221,7 @@ static inline void  usbResetStall(void)
 static void usbGenericSetInterrupt(uchar *data, uchar len, usbTxStatus_t *txStatus)
 {
 uchar   *p;
-schar   i;
+char    i;
 
 #if USB_CFG_IMPLEMENT_HALT
     if(usbTxLen1 == USBPID_STALL)
@@ -299,7 +301,7 @@ USB_PUBLIC void usbSetInterrupt3(uchar *data, uchar len)
             len = usbFunctionDescriptor(rq);        \
         }else{                                      \
             len = USB_PROP_LENGTH(cfgProp);         \
-            usbMsgPtr = (usbMsgPtr_t)(staticName);  \
+            usbMsgPtr = (uchar *)(staticName);      \
         }                                           \
     }
 
@@ -333,9 +335,6 @@ uchar       flags = USB_FLG_MSGPTR_IS_ROM;
             GET_DESCRIPTOR(USB_CFG_DESCR_PROPS_STRING_SERIAL_NUMBER, usbDescriptorStringSerialNumber)
         SWITCH_DEFAULT
             if(USB_CFG_DESCR_PROPS_UNKNOWN & USB_PROP_IS_DYNAMIC){
-                if(USB_CFG_DESCR_PROPS_UNKNOWN & USB_PROP_IS_RAM){
-                    flags = 0;
-                }
                 len = usbFunctionDescriptor(rq);
             }
         SWITCH_END
@@ -348,9 +347,6 @@ uchar       flags = USB_FLG_MSGPTR_IS_ROM;
 #endif
     SWITCH_DEFAULT
         if(USB_CFG_DESCR_PROPS_UNKNOWN & USB_PROP_IS_DYNAMIC){
-            if(USB_CFG_DESCR_PROPS_UNKNOWN & USB_PROP_IS_RAM){
-                flags = 0;
-            }
             len = usbFunctionDescriptor(rq);
         }
     SWITCH_END
@@ -365,8 +361,7 @@ uchar       flags = USB_FLG_MSGPTR_IS_ROM;
  */
 static inline usbMsgLen_t usbDriverSetup(usbRequest_t *rq)
 {
-usbMsgLen_t len = 0;
-uchar   *dataPtr = usbTxBuf + 9;    /* there are 2 bytes free space at the end of the buffer */
+uchar   len  = 0, *dataPtr = usbTxBuf + 9;  /* there are 2 bytes free space at the end of the buffer */
 uchar   value = rq->wValue.bytes[0];
 #if USB_CFG_IMPLEMENT_HALT
 uchar   index = rq->wIndex.bytes[0];
@@ -413,7 +408,7 @@ uchar   index = rq->wIndex.bytes[0];
     SWITCH_DEFAULT                          /* 7=SET_DESCRIPTOR, 12=SYNC_FRAME */
         /* Should we add an optional hook here? */
     SWITCH_END
-    usbMsgPtr = (usbMsgPtr_t)dataPtr;
+    usbMsgPtr = dataPtr;
 skipMsgPtrAssignment:
     return len;
 }
@@ -426,7 +421,7 @@ skipMsgPtrAssignment:
  */
 static inline void usbProcessRx(uchar *data, uchar len)
 {
-usbRequest_t    *rq = (void *)data;
+  usbRequest_t    *rq = (usbRequest_t *)((void *)data);
 
 /* usbRxToken can be:
  * 0x2d 00101101 (USBPID_SETUP for setup data)
@@ -503,8 +498,7 @@ static uchar usbDeviceRead(uchar *data, uchar len)
         }else
 #endif
         {
-            uchar i = len;
-            usbMsgPtr_t r = usbMsgPtr;
+            uchar i = len, *r = usbMsgPtr;
             if(usbMsgFlags & USB_FLG_MSGPTR_IS_ROM){    /* ROM data */
                 do{
                     uchar c = USB_READ_FLASH(r);    /* assign to char size variable to enforce byte ops */
@@ -513,8 +507,7 @@ static uchar usbDeviceRead(uchar *data, uchar len)
                 }while(--i);
             }else{  /* RAM data */
                 do{
-                    *data++ = *((uchar *)r);
-                    r++;
+                    *data++ = *r++;
                 }while(--i);
             }
             usbMsgPtr = r;
@@ -564,8 +557,6 @@ uchar           isReset = !notResetState;
         USB_RESET_HOOK(isReset);
         wasReset = isReset;
     }
-#else
-    notResetState = notResetState;  // avoid compiler warning
 #endif
 }
 
@@ -584,8 +575,7 @@ uchar   i;
  * retries must be handled on application level.
  * unsigned crc = usbCrc16(buffer + 1, usbRxLen - 3);
  */
-
-//	  usbProcessRx(usbRxBuf + USB_BUFSIZE + 1 - usbInputBufOffset, len);
+        usbProcessRx(usbRxBuf + USB_BUFSIZE + 1 - usbInputBufOffset, len);
 #if USB_CFG_HAVE_FLOWCONTROL
         if(usbRxLen > 0)    /* only mark as available if not inactivated */
             usbRxLen = 0;
@@ -598,7 +588,7 @@ uchar   i;
             usbBuildTxBlock();
         }
     }
-    for(i = 20; i > 0; i--) {
+    for(i = 20; i > 0; i--){
         uchar usbLineStatus = USBIN & USBMASK;
         if(usbLineStatus != 0)  /* SE0 has ended */
             goto isNotReset;
@@ -609,7 +599,7 @@ uchar   i;
     usbResetStall();
     DBG1(0xff, 0, 0);
 isNotReset:
-    usbHandleResetHook(i); 
+    usbHandleResetHook(i);
 }
 
 /* ------------------------------------------------------------------------- */

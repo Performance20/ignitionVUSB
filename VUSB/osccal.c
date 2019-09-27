@@ -4,9 +4,11 @@
  * Tabsize: 4
  * Copyright: (c) 2008 by OBJECTIVE DEVELOPMENT Software GmbH
  * License: GNU GPL v2 (see License.txt), GNU GPL v3 or proprietary (CommercialLicense.txt)
+ * This Revision: $Id: osccal.c 762 2009-08-12 17:10:30Z cs $
  */
 
 #include <avr/io.h>
+#include "usbdrv.h"
 
 #ifndef uchar
 #define uchar   unsigned char
@@ -15,12 +17,6 @@
 /* ------------------------------------------------------------------------- */
 /* ------------------------ Oscillator Calibration ------------------------- */
 /* ------------------------------------------------------------------------- */
-
-/* This is a "C" implementation. You can customize it to your needs easily.
- * If you want smaller code size, there is an improved version in the
- * micronucleous project. See
- * https://github.com/micronucleus/micronucleus/blob/master/firmware/osccalASM.S
- */
 
 /* Calibrate the RC oscillator. Our timing reference is the Start Of Frame
  * signal (a single SE0 bit) repeating every millisecond immediately after
