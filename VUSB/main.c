@@ -51,11 +51,13 @@ PROGMEM const char usbHidReportDescriptor[22] = {    /* USB report descriptor */
 	0x15, 0x00,                    //   LOGICAL_MINIMUM (0)
 	0x26, 0xff, 0x00,              //   LOGICAL_MAXIMUM (255)
 	0x75, 0x08,                    //   REPORT_SIZE (8)
-	0x95, 0x08,                    //   REPORT_COUNT (1)
+	0x95, 0x01,                    //   REPORT_COUNT (1)
 	0x09, 0x00,                    //   USAGE (Undefined)
 	0xb2, 0x02, 0x01,              //   FEATURE (Data,Var,Abs,Buf)
 	0xc0                           // END_COLLECTION
 };
+
+uchar USBWriteStr(const char* data);
 
 inline void BlinkLED(void) {
   // if (LED_stateon == true) {
@@ -174,13 +176,20 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 						 return 1; // tell the driver to send 1 byte
 						
 		case REQ_ONBOARD_LED_SET: if (rq->wValue.bytes[0] == VAL_ONBOARD_LED_ON)
+								  {
 										SetLED_On();
+										USBWriteStr("LED angeschaltet\n");
+								  }
 								  else
+								  {
 										SetLED_Off(); 
+										USBWriteStr("LED ausgeschaltet\n");
+								  }
 								  break;
 		
 		case REQ_ONBOARD_LED_STATUS: valBuffer[0] = READ_PIN(LED_BUILTIN);
 									 usbMsgPtr = &valBuffer[0];
+									 USBWriteStr("LED Status gesendet\n");
 									 return 1;
 
 		default:  break;				
@@ -247,8 +256,8 @@ int main(void)
  	sei(); // Enable interrupts after re-enumeration
       
  	for(;;){  
-		USBWriteStr("Hello World!\nUnd jetzt mit 50 Zeichen.\nUnd Noch mehr!!?!?!?\n");
-		BlinkLED();               
+		//USBWriteStr("Hello World!\nUnd jetzt mit 50 Zeichen.\nUnd Noch mehr!!?!?!?\n");
+		//BlinkLED();               
 	 	USBDelay(1000);
  	}
 }

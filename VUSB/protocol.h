@@ -18,7 +18,7 @@
 #define VAL_ONBOARD_LED_ON		1
 #define VAL_ONBOARD_LED_OFF		2
 
-#define DATA_SIZE_IN_BYTE		11
+#define DATA_SIZE_IN_BYTE		0x04  // size in Byte
 
 
 #endif /* PROTOCOL_H_ */
