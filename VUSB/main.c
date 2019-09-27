@@ -126,39 +126,32 @@ USB_PUBLIC uchar usbFunctionSetup(uchar data[8]) {
 usbMsgLen_t usbFunctionSetup(uchar data[8])
 {
 	usbRequest_t    *rq = (usbRequest_t*)((void *)data);
-
-	if((rq->bmRequestType & USBRQ_TYPE_MASK) == USBRQ_TYPE_CLASS){    // HID class request 
-		if(rq->bRequest == USBRQ_HID_GET_REPORT){  // wValue: ReportType (highbyte), ReportID (lowbyte) 
-			// since we have only one report type, we can ignore the report-ID 
-			//static uchar dataBuffer[2];  // buffer must stay valid when usbFunctionSetup returns 
-			if (len > pos) {
-				//usbMsgPtr = &rsBuffer[pos];
-				int i;
-				for (i=0; i<7; i++)
-				{
-					rsBuffer[i] = 'H';
-				}
-				rsBuffer[7]='\n';
-				usbMsgPtr = &rsBuffer[0];
-				//pos++;
-				pos = pos + 8;
-				return 7; // tell the driver to send 1 byte 
-				} else {
-				// Drop through to return 0 (which will stall the request?)
-				len = pos = 0;
-			  }
-			}else if(rq->bRequest == USBRQ_HID_SET_REPORT){
-			// since we have only one report type, we can ignore the report-ID 
-
-			// TODO: Check race issues?
-			//store_char(rq->wIndex.bytes[0], &rx_buffer);
-
-		}
-		}else{
-		// ignore vendor type requests, we don't use any 
+	int i;
+	
+	if((rq->bmRequestType & USBRQ_TYPE_MASK) == USBRQ_TYPE_VENDOR)  
+	{
+			switch(rq->bRequest) 
+			{
+				
+				case REQ_LOGGING:
+					//usbMsgPtr = &rsBuffer[pos];				
+					for (i=1; i<DATA_SIZE_IN_BYTE; i++)
+					{
+						rsBuffer[i] = 'H';
+					}
+					rsBuffer[DATA_SIZE_IN_BYTE-1]='\n';
+					rsBuffer[0]=DATA_SIZE_IN_BYTE-1;
+					usbMsgPtr = &rsBuffer[0];
+					//pos++;
+					//pos = pos + DATA_SIZE_IN_BYTE;
+					return DATA_SIZE_IN_BYTE; // tell the driver to send 1 byte 
+				
+				default: break;
+			};
 	}
 	return 0;
 }
+
 */
 
 usbMsgLen_t usbFunctionSetup(uchar data[8])
@@ -180,9 +173,11 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 						 }
 						 return 1; // tell the driver to send 1 byte
 						
-		case REQ_ONBOARD_LED_ON: SetLED_On(); break;
-		
-		case REQ_ONBOARD_LED_OFF: SetLED_Off(); break;
+		case REQ_ONBOARD_LED_SET: if (rq->wValue.bytes[0] == VAL_ONBOARD_LED_ON)
+										SetLED_On();
+								  else
+										SetLED_Off(); 
+								  break;
 		
 		case REQ_ONBOARD_LED_STATUS: valBuffer[0] = READ_PIN(LED_BUILTIN);
 									 usbMsgPtr = &valBuffer[0];
