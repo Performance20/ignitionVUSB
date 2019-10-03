@@ -4,7 +4,7 @@
  * Created: 26.09.2019 21:24:50
  *  Author: helge
  
- * define the different messages to read/write spark values
+ * define the different messages to read/write spark/ignition values
  */ 
 
 #ifndef PROTOCOL_H_
