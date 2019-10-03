@@ -26,23 +26,14 @@
 
 #include "tools.h"
 
-#define USB_LED_OFF 		0
-#define USB_LED_ON  		1
-#define USB_LED_STATUS  	2
-#define USB_DATA_OUT 		3
-#define USB_DATA_WRITE 		4
-#define USB_DATA_IN 		5
-
 #define LED_BUILTIN   B,1
 
-#define MAX_BUFFER	100
+#define MAX_BUFFER	50  // Text buffer size to send to the host
 static uchar len = 0, pos = 0;
 
-static uchar rsBuffer[MAX_BUFFER] = "";
+static uchar rsBuffer[MAX_BUFFER] = ""; // Text buffer to send text output to the host
 static uchar valBuffer[1];
 static uchar dataReceived = 0, dataLength = 0, dataSent = 0; // for USB_DATA_IN/_OUT
-	   bool  LED_stateon = false;
-	   
 	   
 PROGMEM const char usbHidReportDescriptor[22] = {    /* USB report descriptor */
 	0x06, 0x00, 0xff,              // USAGE_PAGE (Generic Desktop)
@@ -51,7 +42,7 @@ PROGMEM const char usbHidReportDescriptor[22] = {    /* USB report descriptor */
 	0x15, 0x00,                    //   LOGICAL_MINIMUM (0)
 	0x26, 0xff, 0x00,              //   LOGICAL_MAXIMUM (255)
 	0x75, 0x08,                    //   REPORT_SIZE (8)
-	0x95, 0x01,                    //   REPORT_COUNT (1)
+	0x95, DATA_SIZE_IN_BYTE,       //   REPORT_COUNT (1), I think is not needed, but anyway
 	0x09, 0x00,                    //   USAGE (Undefined)
 	0xb2, 0x02, 0x01,              //   FEATURE (Data,Var,Abs,Buf)
 	0xc0                           // END_COLLECTION
@@ -59,10 +50,9 @@ PROGMEM const char usbHidReportDescriptor[22] = {    /* USB report descriptor */
 
 uchar USBWriteStr(const char* data);
 
-inline void BlinkLED(void) {
-  // if (LED_stateon == true) {
+static inline void BlinkLED(void) {
+   if (LED_stateon == true) 
 	TOGGLE_SET(LED_BUILTIN);
-//	}
 }
 
 inline void SetLED_On(void) {
@@ -72,7 +62,6 @@ inline void SetLED_On(void) {
 inline void SetLED_Off(void) {
 	LOW_SET(LED_BUILTIN);
 }
-
 
 // this gets called when custom control message is received
 /*
@@ -162,38 +151,39 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 
 	if((rq->bmRequestType & USBRQ_TYPE_MASK) == USBRQ_TYPE_VENDOR)
 	{   
-		switch(rq->bRequest) {  
-			
-		case REQ_LOGGING: if (len > pos) {
-							usbMsgPtr = &rsBuffer[pos];
-							pos++;
+		switch(rq->bRequest) 
+		{  	
+		case REQ_LOGGING: 
+					if (len > pos) {
+						usbMsgPtr = &rsBuffer[pos];
+						pos++;
 						 } 
-						 else {
-							len = pos = 0;
-							rsBuffer[pos] = 0;  // send zero because no logging info received
-							usbMsgPtr = &rsBuffer[pos];
-						 }
-						 return 1; // tell the driver to send 1 byte
+					else {
+						len = pos = 0;
+						rsBuffer[pos] = 0;  // send zero because no logging info received
+						usbMsgPtr = &rsBuffer[pos];
+						}
+					return 1; // tell the driver to send 1 byte
 						
-		case REQ_ONBOARD_LED_SET: if (rq->wValue.bytes[0] == VAL_ONBOARD_LED_ON)
-								  {
-										SetLED_On();
-										USBWriteStr("LED angeschaltet\n");
-								  }
-								  else
-								  {
-										SetLED_Off(); 
-										USBWriteStr("LED ausgeschaltet\n");
-								  }
-								  break;
+		case REQ_ONBOARD_LED_SET: 
+					if (rq->wValue.bytes[0] == VAL_STATE_ON) {
+						SetLED_On();
+						USBWriteStr("LED angeschaltet\n");
+					}
+					else {
+						SetLED_Off(); 
+						USBWriteStr("LED ausgeschaltet\n");
+					}
+					break;
 		
-		case REQ_ONBOARD_LED_STATUS: valBuffer[0] = READ_PIN(LED_BUILTIN);
-									 usbMsgPtr = &valBuffer[0];
-									 USBWriteStr("LED Status gesendet\n");
-									 return 1;
+		case REQ_ONBOARD_LED_GET: 
+					valBuffer[0] = READ_PIN(LED_BUILTIN);
+					usbMsgPtr = &valBuffer[0];
+					USBWriteStr("LED Status gesendet\n");
+					return 1;
 
 		default:  break;				
-			};
+		};
 	} 
 	return 0;
 }
@@ -222,9 +212,8 @@ void USBDelay(double milli) {
 }
 
 
-uchar USBWriteStr(const char* data) {
-  /*
-   */
+uchar USBWriteStr(const char* data) 
+{
 	int i; 
 
 	//while (len > 0) USBDelay(10);
@@ -237,11 +226,17 @@ uchar USBWriteStr(const char* data) {
      return len; // return real chunk size } 
 }
 
-
-int main(void)
+void init_device()
 {
  uchar i;
-	 
+	// Timer 0 config
+	TCCR0A = (1<<WGM01); // CTC Modus 
+	TCCR0B |= (1<<CS01); // Prescaler 8
+     // ((1650000/8)/1000) = 229 x 9 times = 1,5*9 tick diff = 0,82 µs
+	OCR0A = 229-1; // counte needs to count 9m for 1ms
+      // do Compare Interrupt
+	TIMSK |= (1<<OCIE0A);
+
 	OUTPUT_SET(LED_BUILTIN);  //LED PB1 as output 	
  	wdt_enable(WDTO_1S); // enable 1s watchdog timer
 	//cli();
@@ -249,12 +244,19 @@ int main(void)
  	usbDeviceDisconnect(); // enforce re-enumeration, possible not needed
 	i = 0;  
   	while(--i){           // fake USB disconnect for > 250 ms 
-        _delay_ms(10);
+        _delay_ms(1);
 	  wdt_reset(); 		// keep the watchdog happy 	
     	}
  	usbDeviceConnect();
  	sei(); // Enable interrupts after re-enumeration
-      
+}
+
+
+
+int main(void)
+{
+	init_device();
+	
  	for(;;){  
 		//USBWriteStr("Hello World!\nUnd jetzt mit 50 Zeichen.\nUnd Noch mehr!!?!?!?\n");
 		//BlinkLED();               
