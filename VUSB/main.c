@@ -28,7 +28,7 @@
 
 #define LED_BUILTIN   B,1
 
-#define MAX_BUFFER	50  // Text buffer size to send to the host
+#define MAX_BUFFER	20  // Text buffer size to send to the host
 static uchar len = 0, pos = 0;
 
 static uchar rsBuffer[MAX_BUFFER] = ""; // Text buffer to send text output to the host
