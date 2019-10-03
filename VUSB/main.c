@@ -181,7 +181,15 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 					usbMsgPtr = &valBuffer[0];
 					USBWriteStr("LED Status gesendet\n");
 					return 1;
-
+					
+		case REQ_ignition_timing_SET:				
+					if (rq->wValue.bytes[0] == VAL_ignition_timing_FIX)
+		                 ignition_timing = VAL_ignition_timing_FIX;
+					else
+					if (rq->wValue.bytes[0] == VAL_ignition_timing_DYN)
+						ignition_timing = VAL_ignition_timing_DYN;
+					break;
+					
 		default:  break;				
 		};
 	} 
