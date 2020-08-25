@@ -26,7 +26,9 @@
 
 #include "tools.h"
 
-#define LED_BUILDTIN   B,1
+#define LED_BUILTIN   B,1
+#define LED_B0   B,0
+#define LED_B1   B,1
 
 #define MAX_BUFFER	20  // Text buffer size to send to the host
 static uchar len = 0, pos = 0;
@@ -51,16 +53,16 @@ PROGMEM const char usbHidReportDescriptor[22] = {    /* USB report descriptor */
 uchar USBWriteStr(const char* data);
 
 static inline void BlinkLED(void) {
-  // if (LED_stateon == true) 
-	TOGGLE_SET(LED_BUILDTIN);
+   if (LED_stateon == true) 
+	TOGGLE_SET(LED_BUILTIN);
 }
 
 inline void SetLED_On(void) {
-	HIGH_SET(LED_BUILDTIN);
+	HIGH_SET(LED_BUILTIN);
 }
 
 inline void SetLED_Off(void) {
-	LOW_SET(LED_BUILDTIN);
+	LOW_SET(LED_BUILTIN);
 }
 
 // this gets called when custom control message is received
@@ -178,7 +180,7 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 					break;
 		
 		case REQ_ONBOARD_LED_GET: 
-					valBuffer[0] = READ_PIN(LED_BUILDTIN);
+					valBuffer[0] = READ_PIN(LED_BUILTIN);
 					usbMsgPtr = &valBuffer[0];
 					USBWriteStr("LED Status gesendet\n");
 					return 1;
@@ -239,15 +241,15 @@ void init_device()
 {
  uchar i;
 	// Timer 0 config
-//	TCCR0A = (1<<WGM01); // CTC Modus 
-//	TCCR0B |= (1<<CS01); // Prescaler 8
+	TCCR0A = (1<<WGM01); // CTC Modus 
+	TCCR0B |= (1<<CS01); // Prescaler 8
      // ((1650000/8)/1000) = 229 x 9 times = 1,5*9 tick diff = 0,82 µs
-//	OCR0A = 229-1; // counte needs to count 9m for 1ms
+	OCR0A = 229-1; // counte needs to count 9m for 1ms
       // do Compare Interrupt
-//	TIMSK |= (1<<OCIE0A);
+	TIMSK |= (1<<OCIE0A);
 
-	OUTPUT_SET(LED_BUILDTIN);  //LED PB1 as output 	
- 	//wdt_enable(WDTO_1S); // enable 1s watchdog timer
+	OUTPUT_SET(LED_BUILTIN);  //LED PB1 as output 	
+ 	wdt_enable(WDTO_1S); // enable 1s watchdog timer
 	//cli();
  	usbInit();
  	usbDeviceDisconnect(); // enforce re-enumeration, possible not needed
@@ -268,8 +270,11 @@ int main(void)
 	
  	for(;;){  
 		USBWriteStr("Hello World!\n");
-		//BlinkLED();    
-	 	USBDelay(500);
+		BlinkLED();    
+		//HIGH_SET(LED_B0);           
+		//HIGH_SET(LED_B1);
+		//SetLED_On();
+	 	USBDelay(1000);
  	}
 }
 

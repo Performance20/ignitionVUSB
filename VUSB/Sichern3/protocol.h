@@ -10,10 +10,6 @@
 #ifndef PROTOCOL_H_
 #define PROTOCOL_H_
 
-#ifndef uchar
-#define uchar   unsigned char
-#endif
-
 #define VAL_STATE_OFF						0
 #define VAL_STATE_ON						1
 
