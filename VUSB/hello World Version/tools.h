@@ -6,9 +6,8 @@
  */ 
 
 
-#ifndef __TOOLS_H__
-#define __TOOLS_H__
-#include "definitions.h"
+#ifndef TOOLS_H_
+#define TOOLS_H_
 
 #define _SET(type,name,bit)          type ## name  |= _BV(bit)
 #define _CLEAR(type,name,bit)        type ## name  &= ~ _BV(bit)
@@ -26,25 +25,10 @@
 #define READ_PIN(pin)           _GET(PIN,pin)
 #define BIT_GET(pin)            _BIT(pin)
 
-//#define FIREBIT             BIT_GET(FIRE)
-//#define SIGNALBIT           BIT_GET(SIGNAL)
-
-inline void BlinkLED(bool led_state) {
-   if (led_state == true) 
-	TOGGLE_SET(LED_BUILTIN);
-}
-
-inline void BlinkLEDD(void) {
-	TOGGLE_SET(LED_BUILTIN);
-}
-
-inline void SetLED_On(void) {
-	HIGH_SET(LED_BUILTIN);
-}
-
-inline void SetLED_Off(void) {
-	LOW_SET(LED_BUILTIN);
-}
+#define FIREBIT             BIT_GET(FIRE)
+#define SIGNALBIT           BIT_GET(SIGNAL)
 
 
-#endif /* __TOOLS_H__ */
+
+
+#endif /* TOOLS_H_ */

@@ -81,7 +81,7 @@ section at the end of this file).
 
 /* --------------------------- Functional Range ---------------------------- */
 
-#define USB_CFG_HAVE_INTRIN_ENDPOINT    0
+#define USB_CFG_HAVE_INTRIN_ENDPOINT    1
 /* Define this to 1 if you want to compile a version with two endpoints: The
  * default control endpoint 0 and an interrupt-in endpoint (any other endpoint
  * number).
@@ -210,7 +210,7 @@ section at the end of this file).
 /* define this macro to 1 if you want the function usbMeasureFrameLength()
  * compiled in. This function can be used to calibrate the AVR's RC oscillator.
  */
-#define USB_USE_FAST_CRC                1
+#define USB_USE_FAST_CRC                0
 /* The assembler module has two implementations for the CRC algorithm. One is
  * faster, the other is smaller. This CRC routine is only used for transmitted
  * messages where timing is not critical. The faster routine needs 31 cycles
@@ -245,9 +245,7 @@ section at the end of this file).
 #define USB_CFG_DEVICE_VERSION  0x00, 0x01
 /* Version number of the device: Minor number first, then major number.
  */
-//#define USB_CFG_VENDOR_NAME     '5','8','4','0'
-//#define USB_CFG_VENDOR_NAME_LEN 4
-#define USB_CFG_VENDOR_NAME     'E','M','M','E'
+#define USB_CFG_VENDOR_NAME     '5','8','4','0'
 #define USB_CFG_VENDOR_NAME_LEN 4
 /* These two values define the vendor name returned by the USB device. The name
  * must be given as a list of characters under single quotes. The characters
@@ -258,17 +256,16 @@ section at the end of this file).
  * details.
  */
 #ifndef USB_CFG_DEVICE_NAME
-//#define USB_CFG_DEVICE_NAME     '2','1','7','4'
-//#define USB_CFG_DEVICE_NAME_LEN 4
-#define USB_CFG_DEVICE_NAME     'E','T','Z'
-#define USB_CFG_DEVICE_NAME_LEN 3
+#define USB_CFG_DEVICE_NAME     '2','1','7','4'
+#define USB_CFG_DEVICE_NAME_LEN 4
+ 
  #endif
 /* Same as above for the device name. If you don't want a device name, undefine
  * the macros. See the file USB-IDs-for-free.txt before you assign a name if
  * you use a shared VID/PID.
  */
-#define USB_CFG_SERIAL_NUMBER   '2', '5', '0' 
-#define USB_CFG_SERIAL_NUMBER_LEN   3 
+/*#define USB_CFG_SERIAL_NUMBER   'N', 'o', 'n', 'e' */
+/*#define USB_CFG_SERIAL_NUMBER_LEN   0 */
 /* Same as above for the serial number. If you don't want a serial number,
  * undefine the macros.
  * It may be useful to provide the serial number through other means than at
@@ -297,7 +294,7 @@ section at the end of this file).
  * Don't forget to keep the array and this define in sync!
  */
 
-//#define USB_PUBLIC static
+/* #define USB_PUBLIC static */
 /* Use the define above if you #include usbdrv.c instead of linking against it.
  * This technique saves a couple of bytes in flash memory.
  */

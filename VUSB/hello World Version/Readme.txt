@@ -1,0 +1,1 @@
+This is the attempt to develop a programmable ignition for my motorcycle, based on Atmel Tiny processors.
