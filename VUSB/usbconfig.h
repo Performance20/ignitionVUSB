@@ -260,8 +260,8 @@ section at the end of this file).
 #ifndef USB_CFG_DEVICE_NAME
 //#define USB_CFG_DEVICE_NAME     '2','1','7','4'
 //#define USB_CFG_DEVICE_NAME_LEN 4
-#define USB_CFG_DEVICE_NAME     'E','T','Z'
-#define USB_CFG_DEVICE_NAME_LEN 3
+#define USB_CFG_DEVICE_NAME     'M','Z','-', 'Z','ü','n','d','u','n','g'
+#define USB_CFG_DEVICE_NAME_LEN 10
  #endif
 /* Same as above for the device name. If you don't want a device name, undefine
  * the macros. See the file USB-IDs-for-free.txt before you assign a name if

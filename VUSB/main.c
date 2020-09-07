@@ -79,7 +79,7 @@ int main(void)
 	int act_rps, act_rpm;
 	unsigned long ticks_cnt_peroid;   
     bool led = true;
-	uchar b[2] = "a";
+	char b[2] = "a";
 
  	init_device();
 	//stdout = &mystdout;
