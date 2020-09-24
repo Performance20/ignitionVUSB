@@ -110,12 +110,12 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 
 		case REQ_LOGGING_SET:
 					if (rq->wValue.bytes[0] == VAL_STATE_ON) {
-						LOG_stateon = VAL_STATE_ON;	
+						LOG_state = VAL_STATE_ON;	
 						LOGHINT;					
 					}
 					else {
 					 if (rq->wValue.bytes[0] == VAL_STATE_OFF) { 
-						LOG_stateon = VAL_STATE_OFF;
+						LOG_state = VAL_STATE_OFF;
 						LOGHINT;	 
 					}
 					 else 
@@ -124,7 +124,7 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 					break;
 
 		case REQ_LOGGING_GET:
-					dataBuffer[0] = LOG_stateon;
+					dataBuffer[0] = LOG_state;
 					usbMsgPtr = &dataBuffer[0];
 					LOGHINT;
 					return 1;
@@ -150,32 +150,40 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 					LOGHINT;
 					return 1;
 					
-		case REQ_ignition_timing_SET:				
-					if (rq->wValue.bytes[0] == VAL_ignition_timing_FIX) {
-				     	ignition_timing = rq->wValue.bytes[0];
-						LOGHINT;
-					}
-					else {
-					if (rq->wValue.bytes[0] == VAL_ignition_timing_DYN)
+		case REQ_ignition_mode_SET:	
+					switch(rq->wValue.bytes[0])
 					{
-						ignition_timing = rq->wValue.bytes[0];
-						LOGHINT;
-					}
-					else 
-						LOGERR2(rq->wValue.bytes[0]); 
+						case VAL_ignition_mode_M0:
+				     		ignition_mode = VAL_ignition_mode_M0;
+							LOGHINT;
+							break;
+						case VAL_ignition_mode_M1:
+							ignition_mode = VAL_ignition_mode_M1;
+							LOGHINT;
+							break;
+						case VAL_ignition_mode_M2:
+							ignition_mode = VAL_ignition_mode_M2;
+							LOGHINT;
+							break;
+						case VAL_ignition_mode_M3:
+							ignition_mode = VAL_ignition_mode_M3;
+							LOGHINT;
+							break;
+						deafault:
+							LOGERR2(rq->wValue.bytes[0]); 
 					}
 					break;
 
-		case REQ_ignition_timing_GET:				
-					dataBuffer[0] = ignition_timing;
+		case REQ_ignition_mode_GET:				
+					dataBuffer[0] = ignition_mode;
 					usbMsgPtr = dataBuffer;
 					LOGHINT;
 					return 1;
 
-		case REQ_ignition_startpoint_SET:				
-					if ((rq->wValue.bytes[0] >= TDC_startpoint_MIN) && (rq->wValue.bytes[0] <= TDC_startpoint_MAX)) {
-	                 	ignition_startpoint = rq->wValue.bytes[0];
-						LOGHINT2(ignition_startpoint);
+		case REQ_ignition_fix_startpoint_SET:				
+					if ((rq->wValue.bytes[0] >= MAX_ignition_fix_startpoint) && (rq->wValue.bytes[0] <= MIN_ignition_fix_startpoint)) {
+	                 	ignition_fix_startpoint = rq->wValue.bytes[0];
+						LOGHINT2(ignition_fix_startpoint);
 					}
 					else {
 						//itoa(rq->wValue.bytes[0],bf,10);
@@ -183,8 +191,8 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 					}
 					break;
 
-		case REQ_ignition_startpoint_GET:				
-					dataBuffer[0] = ignition_startpoint;
+		case REQ_ignition_fix_startpoint_GET:				
+					dataBuffer[0] = ignition_fix_startpoint;
 					usbMsgPtr = dataBuffer;
 					return 1;
 
@@ -221,7 +229,7 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 					LOGHINT;
 					return sizeof(act_rps);
 
-		case REQ_ip_table_value_GET:
+		case REQ_ip_tbl_entry_GET:
 					tbl = rq->wValue.bytes[0];
 					pos = rq->wValue.bytes[1];
 
@@ -241,18 +249,19 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 					   LOGERR2(tbl);
 					break;
 
-		case REQ_ip_table_value_SET:
+		case REQ_ip_tbl_entry_SET:
 					tbl = rq->wValue.bytes[0];
 					pos = rq->wValue.bytes[1];
 					 
 					if (tbl >= 1 && tbl <= 3) 
 					  if (pos >= 1 && pos <= ignition_point_tbl_SIZE) {
-					   ignition_point_tbls[tbl][pos].rpm = rq->wIndex.word;
-					   ignition_point_tbls[tbl][pos].degree = rq->wLength.bytes[0];
+					   //ignition_point_tbls[tbl][pos].rpm = rq->wIndex.word;
+					   //ignition_point_tbls[tbl][pos].degree = rq->wLength.bytes[0];
 					   LOGHINT3(tbl, pos); 	
 					}
 					break;
-
+					
+/*
 		case REQ_ip_table_GET:
 					tbl = rq->wValue.bytes[0];
 					if (tbl  >= 1 && tbl  <= 3) { 
@@ -277,7 +286,7 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 					 else
 					   LOGERR2(tbl);
 					break;
-
+  */
 		case REQ_firmware_version_GET:				
 					dataBuffer[0] = firmwareMain;
 					dataBuffer[1] = firmwareSub;
@@ -312,7 +321,7 @@ uchar usbFunctionWrite(unsigned char *data, unsigned char len)
     if(len > remain)                // if this is the last incomplete chunk
         len = remain;               // limit to the amount we can store
     remain = remain - len;
-    memcpy(&ignition_point_tbls[tbl][pos], data, len);
+   // memcpy(&ignition_point_tbls[tbl][pos], data, len);
 // table = (uchar*) &ignition_point_tbls[tbl][pos];
 //  for(i = 0; i < len; i++)
 //      table[pos++] = data[i];

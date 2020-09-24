@@ -31,11 +31,11 @@ static const char errHint3[]  = "H: %d W: %d, %d\n";
 
 #define LOG(...) if (LOG_stateon == VAL_STATE_ON) printfss(__VA_ARGS__);
 //#define LOG(...)
-#define LOGERR  if (LOG_stateon == VAL_STATE_ON) printfss(errStr, __LINE__) 
-#define LOGHINT if (LOG_stateon == VAL_STATE_ON) printfss(errHint, __LINE__) 
-#define LOGERR2(...)  if (LOG_stateon == VAL_STATE_ON) printfss(errStr2, __LINE__, __VA_ARGS__)
-#define LOGHINT2(...) if (LOG_stateon == VAL_STATE_ON) printfss(errHint2, __LINE__, __VA_ARGS__)
-#define LOGHINT3(...) if (LOG_stateon == VAL_STATE_ON) printfss(errHint3, __LINE__, __VA_ARGS__)
+#define LOGERR  if (LOG_state == VAL_STATE_ON) printfss(errStr, __LINE__) 
+#define LOGHINT if (LOG_state == VAL_STATE_ON) printfss(errHint, __LINE__) 
+#define LOGERR2(...)  if (LOG_state == VAL_STATE_ON) printfss(errStr2, __LINE__, __VA_ARGS__)
+#define LOGHINT2(...) if (LOG_state == VAL_STATE_ON) printfss(errHint2, __LINE__, __VA_ARGS__)
+#define LOGHINT3(...) if (LOG_state == VAL_STATE_ON) printfss(errHint3, __LINE__, __VA_ARGS__)
 
 uchar USBWriteStr(const char* data);
 uchar USBWriteStrT(const char* strdata);
