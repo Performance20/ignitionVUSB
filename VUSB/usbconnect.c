@@ -19,7 +19,7 @@ PROGMEM const char usbHidReportDescriptor[22] = {    /* USB report descriptor */
 	0x15, 0x00,                    //   LOGICAL_MINIMUM (0)
 	0x26, 0xff, 0x00,              //   LOGICAL_MAXIMUM (255)
 	0x75, 0x08,                    //   REPORT_SIZE (8)
-	0x95, DATA_SIZE_IN_BYTE,       //   REPORT_COUNT (1), I think is not needed, but anyway
+	0x95, DATA_STRING_SIZE_IN_BYTE,//   REPORT_COUNT (1), I think is not needed, but anyway
 	0x09, 0x00,                    //   USAGE (Undefined)
 	0xb2, 0x02, 0x01,              //   FEATURE (Data,Var,Abs,Buf)
 	0xc0                           // END_COLLECTION
@@ -33,12 +33,12 @@ int usb_putchar( char c, FILE *stream )
 	tx_write(c);    
 	return 0;
 }
-*/
+
 int usb_putchar( char c)
 {
-    /*if( c == '\n' )
-        usb_putchar( '\r', stream );
-	*/
+   //if( c == '\n' )
+   //     usb_putchar( '\r', stream );
+//	
 	tx_write(c, true);    
 	return 0;
 }
@@ -55,7 +55,7 @@ uchar USBWriteStr(const char* strdata)
     return len; // return real chunk size  
 }
 
-
+*/
 
 // wait a specified number of milliseconds (very roughly), refreshing in the background
 void USBDelay_ms(unsigned int milli) { 
@@ -86,27 +86,22 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 	usbRequest_t    *rq = (usbRequest_t*)((void *)data);
 	
 	int				j, i; 
-	static uchar    dataBuffer[4];
-
+	static uchar    dataBuffer[DATA_STRING_SIZE_IN_BYTE];
+	const char t[] = "Hello";
+	
 	if((rq->bmRequestType & USBRQ_TYPE_MASK) == USBRQ_TYPE_VENDOR)
 	{   
 		switch(rq->bRequest) 
 		{  	
 		case REQ_LOGGING: 
-					dataBuffer[0] = tx_read(); // return 0 if nothing to send
-					/*
-						if (llen > ppos) {
-							usbMsgPtr = &dataBuffer[ppos];
-							ppos++;
-						}
-						else {
-							llen = ppos = 0;
-							dataBuffer[ppos] = 0;  // send zero because no logging info received
-							usbMsgPtr = &dataBuffer[ppos];
-						}
-					*/	
-					usbMsgPtr = &dataBuffer[0]; 
-					return 1; 
+					i = 0;
+					while ((dataBuffer[i] = tx_read()))
+					{
+						i++;
+						if (i == DATA_STRING_SIZE_IN_BYTE) break;
+					}
+					usbMsgPtr = dataBuffer; 
+					return i; 
 
 		case REQ_LOGGING_SET:
 					if (rq->wValue.bytes[0] == VAL_STATE_ON) {
@@ -312,7 +307,7 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 	} 
 	return 0;
 }
-
+/*
 uchar usbFunctionWrite(unsigned char *data, unsigned char len)
 {
     uchar i;
@@ -329,3 +324,4 @@ uchar usbFunctionWrite(unsigned char *data, unsigned char len)
     return remain == 0;             // return 1 if we have all data
 }
 
+*/

@@ -23,7 +23,7 @@
 	define. If the function should be called something else,
 	replace outbyte(c) by your own function call.
 */
-#define putchar(c) usb_putchar(c)
+#define putchar(c) tx_writeow(c);
 
 static void printchar(char **str, int c)
 {

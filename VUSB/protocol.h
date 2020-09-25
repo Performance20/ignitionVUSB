@@ -71,10 +71,10 @@ static int8_t ithelper_startpoint = DEF_ithelper_startpoint;  //degree: -30 to 2
 // On mode M2, define the max RPM for support starter help
 #define REQ_starthelp_RPM_GET				REQ_ITH_startpoint_SET + 1 
 #define REQ_starthelp_RPM_SET				REQ_starthelp_RPM_GET + 1
-#define MAX_ignition_fix_startpoint			2000
-#define MIN_ignition_fix_startpoint			0
-#define DEF_ignition_fix_startpoint			500
-static  int16_t ithelper_RPM_max = DEF_ignition_fix_startpoint;  //RPM: 0 - 2000  
+#define MAX_ithelper_RPM					2000
+#define MIN_ithelper_RPM					0
+#define DEF_ithelper_RPM					500
+static  int16_t ithelper_RPM = DEF_ithelper_RPM;  //RPM: 0 - 2000  
 
 // On fixed config = mode M1 + M2, define the shift from TDC
 #define REQ_ignition_fix_startpoint_GET		REQ_starthelp_RPM_SET + 1
@@ -195,12 +195,15 @@ volatile static int16_t act_DWA = 0;	                      // current dwell angl
 volatile static uint16_t next_ip_ms = 0;	           // in ms
 
 // Overal running time
-#define REQ_operation_sec_GET		REQ_next_ip_time_in_ms_GET + 1  // running in seconds or better minutes?
-#define REQ_operation_sec_SET		REQ_operation_sec_GET + 1  //
+#define REQ_operation_sec_GET					REQ_next_ip_time_in_ms_GET + 1  // running in seconds or better minutes?
+#define REQ_operation_sec_SET					REQ_operation_sec_GET + 1  //
 volatile static uint32_t operationTime = 0;
 
+#define REQ_firmware_version_GET				REQ_operation_sec_SET + 1  //manf
 
-#define DATA_SIZE_IN_BYTE			0x04  // size in Byte
+#define DATA_NUMBER_SIZE_IN_BYTE			0x04						// size in Byte of maximum Number = 4 Byte = uint32_t
+#define DATA_STRING_SIZE_IN_BYTE			0x10						// size in Byte of one transfered String = 10 Byte
+#define DATA_TABLE_SIZE_IN_BYTE				(sizeof(ignition_point_t)*ignition_point_tbl_SIZE)  // size in Byte of one transfered table
 
-#define REQ_firmware_version_GET		21  //manf
+
 #endif /* PROTOCOL_H_ */

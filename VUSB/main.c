@@ -78,12 +78,12 @@ int main(void)
 {
 	int act_rps, act_rpm;
 	unsigned long ticks_cnt_peroid;   
-    bool led = true;
-	char b[2] = "a";
+    //bool led = true;
+	//char b[6] = "Hallo";
 
  	init_device();
 	//stdout = &mystdout;
-   b[1] = 0;
+   //b[5] = 0;
  	for(;;){  
 	//	ticks_cnt_peroid = (pre_ticks_cnt * (UINT_MAX +1)) + ticksTCNT0_cnt;
 	//	if (ticks_cnt_peroid > F_CPU)
@@ -96,11 +96,11 @@ int main(void)
 //		LOG("act_rps = %d\n",act_rps);
 //		USBWriteStr("act_rps = ");
 //		USBWriteStr(&bf[0]);
-		USBWriteStr(&b[0]);
-		b[0] = b[0] + 1;
+//		USBWriteStr(&b[0]);
+//		b[0] = b[0] + 1;
 		
-		//BlinkLEDD();               
+		//BlinkLEDD();  
+		//LOG("abcdefghi\n");
 	 	USBDelay_ms(1000);
  	}
 }
-

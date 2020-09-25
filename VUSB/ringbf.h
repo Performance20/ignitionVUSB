@@ -26,6 +26,7 @@ extern "C" {
 
 	int tx_remaining(void);
 	int tx_write(uchar c, uchar overwrite);
+	int tx_writeow(uchar c); //overwrite version
 	int tx_available();
 	uchar tx_read();
 

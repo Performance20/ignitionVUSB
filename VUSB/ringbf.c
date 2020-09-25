@@ -1,4 +1,6 @@
 
+
+#include <stdbool.h>
 #include "ringbf.h" 
 
 static ring_buffer_t tx_buffer = { { 0 }, 0, 0 };
@@ -28,6 +30,10 @@ int store_char(uchar c, ring_buffer_t *the_buffer, uchar ow)
 int tx_write(uchar c, uchar overwrite) { // stop writing, when buffer is full and overwrite is false
 	//if (!tx_remaining()) tx_read();
     return store_char(c, &tx_buffer, overwrite);
+}
+
+int tx_writeow(uchar c) { // overwrite if buffer is full
+	return store_char(c, &tx_buffer, true);
 }
 
 
