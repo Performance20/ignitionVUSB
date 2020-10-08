@@ -87,7 +87,7 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 	
 	int				j, i; 
 	static uchar    dataBuffer[DATA_STRING_SIZE_IN_BYTE];
-	const char t[] = "Hello";
+	bool			st;
 	
 	if((rq->bmRequestType & USBRQ_TYPE_MASK) == USBRQ_TYPE_VENDOR)
 	{   
@@ -95,22 +95,24 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 		{  	
 		case REQ_LOGGING: 
 					i = 0;
+					
 					while ((dataBuffer[i] = tx_read()))
 					{
 						i++;
 						if (i == DATA_STRING_SIZE_IN_BYTE) break;
 					}
 					usbMsgPtr = dataBuffer; 
+					
 					return i; 
-
+					
 		case REQ_LOGGING_SET:
-					if (rq->wValue.bytes[0] == VAL_STATE_ON) {
-						LOG_state = VAL_STATE_ON;	
+					if (rq->wValue.bytes[0] == VAL_LOG_ON) {
+						LOG_state = VAL_LOG_ON;	
 						LOGHINT;					
 					}
 					else {
-					 if (rq->wValue.bytes[0] == VAL_STATE_OFF) { 
-						LOG_state = VAL_STATE_OFF;
+					 if (rq->wValue.bytes[0] == VAL_LOG_OFF) { 
+						LOG_state = VAL_LOG_OFF;
 						LOGHINT;	 
 					}
 					 else 
@@ -125,22 +127,35 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 					return 1;
 
 		case REQ_ONBOARD_LED_SET: 
-					if (rq->wValue.bytes[0] == VAL_STATE_ON) {
-						SetLED_On();
-						LOGHINT;
-					}
-					else {
-					if (rq->wValue.bytes[0] == VAL_STATE_OFF) {
-						SetLED_Off(); 
-						LOGHINT;
-					}
-					else
-					LOGERR2(rq->wValue.bytes[0]); 
-					}
+					st = true;
+					switch (rq->wValue.bytes[0])
+					{
+						case VAL_LED_STATE_ON:
+								SetLED_On();
+								LOGHINT;
+								break;
+						case VAL_LED_STATE_OFF:
+								SetLED_Off(); 
+								LOGHINT;
+								break;
+						case VAL_LED_STATE_BLINK:
+								LOGHINT;
+								break;
+						case VAL_LED_STATE_INPUT:
+								LOGHINT;
+								break;
+						case VAL_LED_STATE_DIAG:
+								LOGHINT;
+								break;
+						default:
+							 LOGERR2(rq->wValue.bytes[0]); 
+							 st = false;
+					};
+					if (st == true) LED_state = rq->wValue.bytes[0];
 					break;
 		
 		case REQ_ONBOARD_LED_GET: 
-					dataBuffer[0] = READ_PIN(LED_BUILTIN);
+					dataBuffer[0] = LED_state;
 					usbMsgPtr = &dataBuffer[0];
 					LOGHINT;
 					return 1;
@@ -164,9 +179,9 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 							ignition_mode = VAL_ignition_mode_M3;
 							LOGHINT;
 							break;
-						deafault:
+						default:
 							LOGERR2(rq->wValue.bytes[0]); 
-					}
+					};
 					break;
 
 		case REQ_ignition_mode_GET:				
@@ -174,13 +189,54 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 					usbMsgPtr = dataBuffer;
 					LOGHINT;
 					return 1;
+	
+	/* ithelper_startpoint **********************************************************************/				
+		case REQ_ITH_startpoint_SET: // ZZP Starten
+					if ((rq->wValue.bytes[0] >= MIN_ithelper_startpoint) && (rq->wValue.bytes[0] <= MAX_ithelper_startpoint)) 
+					{
+						ithelper_startpoint = rq->wValue.bytes[0];
+						LOGHINT2(ithelper_startpoint);
+					}
+					else 
+					{
+					//itoa(rq->wValue.bytes[0],bf,10);
+						LOGERR2(rq->wValue.bytes[0]);
+					}
+					break;
 
+		case REQ_ITH_startpoint_GET:
+					dataBuffer[0] = ithelper_startpoint;
+					usbMsgPtr = dataBuffer;
+					return 1;
+					
+	/* ithelper_RPM **********************************************************************/
+		case REQ_starthelp_RPM_SET: // ZZP Starten
+					if ((rq->wValue.bytes[0] >= MIN_ithelper_RPM) && (rq->wValue.bytes[0] <= MAX_ithelper_RPM))
+					{
+						ithelper_RPM = rq->wValue.bytes[0];
+						LOGHINT2(ithelper_RPM);
+					}
+					else
+					{
+						//itoa(rq->wValue.bytes[0],bf,10);
+						LOGERR2(rq->wValue.bytes[0]);
+					}
+					break;
+
+		case REQ_starthelp_RPM_GET:
+					dataBuffer[0] = ithelper_startpoint;
+					usbMsgPtr = dataBuffer;
+					return 1;
+					
+/* ignition_fix_startpoint **********************************************************************/
 		case REQ_ignition_fix_startpoint_SET:				
-					if ((rq->wValue.bytes[0] >= MAX_ignition_fix_startpoint) && (rq->wValue.bytes[0] <= MIN_ignition_fix_startpoint)) {
+					if ((rq->wValue.bytes[0] >= MIN_ignition_fix_startpoint) && (rq->wValue.bytes[0] <= MAX_ignition_fix_startpoint)) 
+					{
 	                 	ignition_fix_startpoint = rq->wValue.bytes[0];
 						LOGHINT2(ignition_fix_startpoint);
 					}
-					else {
+					else 
+					{
 						//itoa(rq->wValue.bytes[0],bf,10);
 						LOGERR2(rq->wValue.bytes[0]); 
 					}
@@ -191,8 +247,29 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 					usbMsgPtr = dataBuffer;
 					return 1;
 
+/* dwell_angle_fix **********************************************************************/
+		case REQ_Dwell_Angle_SET:
+					if ((rq->wValue.word >= MIN_dwell_angle_fix) && (rq->wValue.word <= MAX_dwell_angle_fix))
+					{
+						dwell_angle_fix = rq->wValue.word;
+						LOGHINT2(dwell_angle_fix);
+					}
+					else
+					{
+						//itoa(rq->wValue.bytes[0],bf,10);
+						LOGERR2(rq->wValue.word);
+					}
+					break;
+
+		case REQ_Dwell_Angle_GET:
+					dataBuffer[0] = dwell_angle_fix;
+					dataBuffer[1] = dwell_angle_fix >> 8;
+					usbMsgPtr = dataBuffer;
+					return 2;
+
+/* dwell_angle_fix **********************************************************************/
 		case REQ_ip_tbl_SET:				
-					if ((rq->wValue.bytes[0] >= VAL_ip_table_1) && (rq->wValue.bytes[0] <= VAL_ip_table_3)) {
+					if ((rq->wValue.bytes[0] >= MIN_active_ip_tbl) && (rq->wValue.bytes[0] <= MAX_active_ip_tbl)) {
 	                 	active_ip_tbl = rq->wValue.bytes[0];
 						LOGHINT2(active_ip_tbl);
 					}
@@ -207,6 +284,7 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 					usbMsgPtr = dataBuffer;
 					LOGHINT;
 					return 1;
+
 
 		case REQ_rpm_GET:
 					for(j=0,i=sizeof(act_rpm)-1; i>=0; i--,j++){
@@ -234,7 +312,7 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 					   dataBuffer[1] = (ignition_point_tbls[tbl][pos].rpm) & 0xff;
 					   dataBuffer[2] = ignition_point_tbls[tbl][pos].degree;
 					   usbMsgPtr = dataBuffer;
-					   LOGHINT3(tbl, pos); 		  
+					   //LOGHINT3(tbl, pos); 		  
 					   return 3;
 					  }
 					  else 
@@ -252,7 +330,7 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 					  if (pos >= 1 && pos <= ignition_point_tbl_SIZE) {
 					   //ignition_point_tbls[tbl][pos].rpm = rq->wIndex.word;
 					   //ignition_point_tbls[tbl][pos].degree = rq->wLength.bytes[0];
-					   LOGHINT3(tbl, pos); 	
+					   //LOGHINT3(tbl, pos); 	
 					}
 					break;
 					
@@ -261,7 +339,7 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 					tbl = rq->wValue.bytes[0];
 					if (tbl  >= 1 && tbl  <= 3) { 
 					   usbMsgPtr = (uchar*) &ignition_point_tbls[tbl][0];
-					   LOGHINT3(tbl, pos); 		  
+					   //LOGHINT3(tbl, pos); 		  
 					   return sizeof(ignition_point_tbl1);  //should be 30 Bytes
 					// return sizeOf(ignition_point_t) * ignition_point_tbl_SIZE
 					  }

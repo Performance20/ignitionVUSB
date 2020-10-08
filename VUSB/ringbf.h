@@ -3,7 +3,7 @@
 #define __ringbf_h_included__
 
 
-#define RING_BUFFER_SIZE 25
+#define RING_BUFFER_SIZE 50
 
 //#undef RING_BUFFER_RX
 

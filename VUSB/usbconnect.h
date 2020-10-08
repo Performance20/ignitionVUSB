@@ -13,6 +13,8 @@
 
 #include "printf.h"
 
+#define LOGSUPPORT
+
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
 #define LINENB TOSTRING(__LINE__)
@@ -25,27 +27,51 @@
 //#define PRINTF(...) printf(__VA_ARGS__)
 //#define PTF(A,...) fprintf(file,A,##__VA_ARGS__); printf(A,##__VA_ARGS__);
 
-static const char logtestStr[]  = "%s: %s\n";
-static const char logStr[]  = "%s\n";
-static const char errStr[]  = "E: %s\n";
-static const char errHint[]  = "H: %s\n";
-static const char errStr2[]  = "E: %s W: %d\n";
-static const char errHint2[]  = "H: %s W: %d\n";
-static const char errHint3[]  = "H: %s W: %d, %d\n";
+#ifdef LOGSUPPORT
+#define LOGHINTSHOW
+//#define LOGERRSHOW
 
+//static const char logtestStr[]  PROGMEM = "%s:%s\n";
+//static const char logStr[]  PROGMEM = "%s\n";
+#ifdef LOGERRSHOW
+static const char errStr[]  PROGMEM = "E:%s\n";
+static const char errStr2[]  PROGMEM = "E:%s %d\n";
+#endif
+#ifdef LOGHINTSHOW
+static const char logHint[]   = "H:%s\n";
+static const char logHint2[]   = "H:%s %d\n";
+//static const char logHint3[] PROGMEM  = "H:%s W:%d, %d\n";
+#endif
 
 //#define LOGTEST(...) printfss(logtestStr, ATT, __VA_ARGS__);
-#define LOGTEST(...) printfss(logtestStr, LINENB, __VA_ARGS__);
-#define LOG(...) printfss(logStr, __VA_ARGS__);   // Log Text
+//#define LOGTEST(...) // printfss(logtestStr, LINENB, __VA_ARGS__);
+//#define LOG(...) //printfss(logStr, __VA_ARGS__);   // Log Text
 //#define LOG(...) if (LOG_state == VAL_LOG_ON) printfss(logStr, __VA_ARGS__);   // Log Text
-#define LOGERR  if (LOG_state == VAL_LOG_ON) printfss(errStr, LINENB) 
-#define LOGHINT if (LOG_state == VAL_LOG_ON) printfss(errHint, LINENB) 
-#define LOGERR2(...)  if (LOG_state == VAL_LOG_ON) printfss(errStr2, LINENB, __VA_ARGS__)
-#define LOGHINT2(...) if (LOG_state == VAL_LOG_ON) printfss(errHint2, LINENB, __VA_ARGS__)
-#define LOGHINT3(...) if (LOG_state == VAL_LOG_ON) printfss(errHint3, LINENB, __VA_ARGS__)
 
+#ifdef LOGERRSHOW
+#define LOGERR  if (LOG_state == VAL_LOG_ON) printfss(errStr, LINENB) 
+#define LOGERR2(...) if (LOG_state == VAL_LOG_ON) printfss(errStr2, LINENB, __VA_ARGS__)
+#else
+#define LOGERR  
+#define LOGERR2  
+#endif
+
+#ifdef LOGHINTSHOW
+#define LOGHINT if (LOG_state == VAL_LOG_ON) printfss(logHint, LINENB) //if (LOG_state == VAL_LOG_ON) printfss(errHint, LINENB) 
+#define LOGHINT2(...) if (LOG_state == VAL_LOG_ON) printfss(logHint2, LINENB, __VA_ARGS__)
+//#define LOGHINT3(...) //if (LOG_state == VAL_LOG_ON) printfss(errHint3, LINENB, __VA_ARGS__)
+#else
+#define LOGHINT
+#define LOGHINT2(...)
+#endif
 //uchar USBWriteStr(const char* data);
 //uchar USBWriteStrT(const char* strdata);
+#else
+#define LOGERR
+#define LOGERR2(...)
+#define LOGHINT 
+#define LOGHINT2(...) 
+#endif
 
 void USBDelay_ms(unsigned int milli);
 
