@@ -64,7 +64,7 @@ static uint8_t ignition_mode = DEF_ignition_mode; // or VAL_ignition_timing_DYN
 #define REQ_ITH_startpoint_GET				REQ_ignition_mode_SET + 1 
 #define REQ_ITH_startpoint_SET				REQ_ITH_startpoint_GET + 1
 #define MAX_ithelper_startpoint				20
-#define MIN_ithelper_startpoint				-30
+#define MIN_ithelper_startpoint				(-30)
 #define DEF_ithelper_startpoint				0
 static int8_t ithelper_startpoint = DEF_ithelper_startpoint;  //degree: -30 to 20  
 
@@ -74,7 +74,7 @@ static int8_t ithelper_startpoint = DEF_ithelper_startpoint;  //degree: -30 to 2
 #define MAX_ithelper_RPM					2000
 #define MIN_ithelper_RPM					0
 #define DEF_ithelper_RPM					500
-static  int16_t ithelper_RPM = DEF_ithelper_RPM;  //RPM: 0 - 2000  
+static  uint16_t ithelper_RPM = DEF_ithelper_RPM;  //RPM: 0 - 2000  
 
 // On fixed config = mode M1 + M2, define the shift from TDC
 #define REQ_ignition_fix_startpoint_GET		REQ_starthelp_RPM_SET + 1
@@ -87,9 +87,9 @@ static int8_t ignition_fix_startpoint = DEF_ignition_fix_startpoint;  //degree: 
 // Dwell angle
 #define REQ_Dwell_Angle_GET					REQ_ignition_fix_startpoint_SET + 1
 #define REQ_Dwell_Angle_SET					REQ_Dwell_Angle_GET + 1
-#define MAX_dwell_angle_fix					(140)
-#define MIN_dwell_angle_fix					(240)
-#define DEF_dwell_angle_fix					(180)
+#define MAX_dwell_angle_fix					(-140)
+#define MIN_dwell_angle_fix					(-240)
+#define DEF_dwell_angle_fix					(-180)
 static int16_t dwell_angle_fix = DEF_dwell_angle_fix;  //degree:    
 
 // which table is active
@@ -199,10 +199,10 @@ volatile static uint16_t next_ip_ms = 0;	           // in ms
 #define REQ_operation_sec_SET		REQ_operation_sec_GET + 1  //
 volatile static uint32_t operationTime = 0;
 
-#define REQ_firmware_version_GET		REQ_operation_sec_SET + 1  //manf
+#define REQ_firmware_version_GET		REQ_operation_sec_SET + 1  //man
 
 #define DATA_NUMBER_SIZE_IN_BYTE			4						// size in Byte of maximum Number = 4 Byte = uint32_t
-#define DATA_STRING_SIZE_IN_BYTE			15						// size in Byte of one transfered String = 10 Byte
+#define DATA_STRING_SIZE_IN_BYTE			15						// size in Byte of one transfered String = 15 Byte
 #define DATA_TABLE_SIZE_IN_BYTE				(sizeof(ignition_point_t)*ignition_point_tbl_SIZE)  // size in Byte of one transfered table
 
 #endif /* PROTOCOL_H_ */

@@ -53,7 +53,7 @@ static const char logHint2[]   = "H:%s %d\n";
 #define LOGERR2(...) if (LOG_state == VAL_LOG_ON) printfss(errStr2, LINENB, __VA_ARGS__)
 #else
 #define LOGERR  
-#define LOGERR2  
+#define LOGERR2(...)  
 #endif
 
 #ifdef LOGHINTSHOW
