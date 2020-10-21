@@ -46,20 +46,20 @@ static const char logHint2[]   = "H:%s %d\n";
 //#define LOGTEST(...) printfss(logtestStr, ATT, __VA_ARGS__);
 //#define LOGTEST(...) // printfss(logtestStr, LINENB, __VA_ARGS__);
 //#define LOG(...) //printfss(logStr, __VA_ARGS__);   // Log Text
-//#define LOG(...) if (LOG_state == VAL_LOG_ON) printfss(logStr, __VA_ARGS__);   // Log Text
+//#define LOG(...) if (parameter.LOG_state == VAL_LOG_ON) printfss(logStr, __VA_ARGS__);   // Log Text
 
 #ifdef LOGERRSHOW
-#define LOGERR  if (LOG_state == VAL_LOG_ON) printfss(errStr, LINENB) 
-#define LOGERR2(...) if (LOG_state == VAL_LOG_ON) printfss(errStr2, LINENB, __VA_ARGS__)
+#define LOGERR  if (parameter.LOG_state == VAL_LOG_ON) printfss(errStr, LINENB) 
+#define LOGERR2(...) if (parameter.LOG_state == VAL_LOG_ON) printfss(errStr2, LINENB, __VA_ARGS__)
 #else
 #define LOGERR  
 #define LOGERR2(...)  
 #endif
 
 #ifdef LOGHINTSHOW
-#define LOGHINT if (LOG_state == VAL_LOG_ON) printfss(logHint, LINENB) //if (LOG_state == VAL_LOG_ON) printfss(errHint, LINENB) 
-#define LOGHINT2(...) if (LOG_state == VAL_LOG_ON) printfss(logHint2, LINENB, __VA_ARGS__)
-//#define LOGHINT3(...) //if (LOG_state == VAL_LOG_ON) printfss(errHint3, LINENB, __VA_ARGS__)
+#define LOGHINT if (parameter.LOG_state == VAL_LOG_ON) printfss(logHint, LINENB) //if (LOG_state == VAL_LOG_ON) printfss(errHint, LINENB) 
+#define LOGHINT2(...) if (parameter.LOG_state == VAL_LOG_ON) printfss(logHint2, LINENB, __VA_ARGS__)
+//#define LOGHINT3(...) //if (parameter.LOG_state == VAL_LOG_ON) printfss(errHint3, LINENB, __VA_ARGS__)
 #else
 #define LOGHINT
 #define LOGHINT2(...)

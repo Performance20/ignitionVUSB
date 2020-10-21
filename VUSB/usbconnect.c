@@ -11,6 +11,16 @@
 //static char bf[6];  		// itoa buffer;
 //static uchar dataReceived, dataLength, dataSent; // for USB_DATA_IN/_OUT
 uchar tbl, pos, remain;
+extern EE_PARAM parameter;
+extern uint32_t operationTime;
+extern  uint16_t act_rpm;	                  // revolutions per minute
+extern  uint32_t act_rps;	                  // revolutions per second
+extern  int8_t act_IP;	                      // current injection point in degree
+extern  int16_t act_DWA;	                      // current dwell angle in degree
+// time to next ignition in ms make it sense ?
+extern  uint16_t next_ip_ms;	           // in ms
+extern EE_PARAM EEMEM eeprom;
+
 
 PROGMEM const char usbHidReportDescriptor[22] = {    /* USB report descriptor */
 	0x06, 0x00, 0xff,              // USAGE_PAGE (Generic Desktop)
@@ -84,10 +94,11 @@ void USBDelay_ms(unsigned int milli) {
 usbMsgLen_t usbFunctionSetup(uchar data[8])
 {
 	usbRequest_t    *rq = (usbRequest_t*)((void *)data);
-	int				i; 
+	int16_t				i; 
 	static uint8_t  dataBuffer[DATA_STRING_SIZE_IN_BYTE];
 	int8_t          con8;
 	int16_t         con16;
+	int8_t			ee_update = false;
 	
 	if((rq->bmRequestType & USBRQ_TYPE_MASK) == USBRQ_TYPE_VENDOR)
 	{   
@@ -107,15 +118,16 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 		case REQ_LOGGING_SET:
 					if ((rq->wValue.bytes[0] >= MIN_LOG_state) && (rq->wValue.bytes[0] <= MAX_LOG_state))
 					{
-						LOG_state = rq->wValue.bytes[0];
-						LOGHINT2(LOG_state);
+						parameter.LOG_state = rq->wValue.bytes[0];
+						ee_update = true;
+						LOGHINT2(parameter.LOG_state);
 					}
 					else
 						LOGERR2(rq->wValue.bytes[0]);
 					break;
 
 		case REQ_LOGGING_GET:
-					dataBuffer[0] = LOG_state;
+					dataBuffer[0] = parameter.LOG_state;
 					usbMsgPtr = dataBuffer;
 					LOGHINT;
 					return 1;
@@ -124,17 +136,19 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 		case REQ_ONBOARD_LED_SET: 
 					if ((rq->wValue.bytes[0] >= MIN_LED_state) && (rq->wValue.bytes[0] <= MAX_LED_state))
 					{
-						LED_state = rq->wValue.bytes[0];
-						LOGHINT2(LED_state);
-						if (LED_state == VAL_LED_STATE_ON) SetLED_On();
-						if (LED_state == VAL_LED_STATE_OFF) SetLED_Off();
+						parameter.LED_state = rq->wValue.bytes[0];
+						ee_update = true;
+						LOGHINT2(parameter.LED_state);
+						if (parameter.LED_state == VAL_LED_STATE_ON) SetLED_On();
+						else 
+							if (parameter.LED_state == VAL_LED_STATE_OFF) SetLED_Off();
 					}
 					else
 						LOGERR2(rq->wValue.bytes[0]);
 					break;
 		
 		case REQ_ONBOARD_LED_GET: 
-					dataBuffer[0] = LED_state;
+					dataBuffer[0] = parameter.LED_state;
 					usbMsgPtr = dataBuffer;
 					LOGHINT;
 					return 1;
@@ -144,15 +158,16 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 		case REQ_ignition_mode_SET:		
 					if ((rq->wValue.bytes[0] >= MIN_ignition_mode) && (rq->wValue.bytes[0] <= MAX_ignition_mode)) 
 					{
-						ignition_mode = rq->wValue.bytes[0];
-						LOGHINT2(ignition_mode);
+						parameter.ignition_mode = rq->wValue.bytes[0];
+						ee_update = true;
+						LOGHINT2(parameter.ignition_mode);
 					}
 					else 
 						LOGERR2(rq->wValue.bytes[0]);
 					break;
 
 		case REQ_ignition_mode_GET:				
-					dataBuffer[0] = ignition_mode;
+					dataBuffer[0] = parameter.ignition_mode;
 					usbMsgPtr = dataBuffer;
 					LOGHINT;
 					return 1;
@@ -162,8 +177,9 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 					con8 = rq->wValue.bytes[0];		
 					if ((con8 >= MIN_ithelper_startpoint) && (con8 <= MAX_ithelper_startpoint)) 
 					{
-						ithelper_startpoint = con8;
-						LOGHINT2(ithelper_startpoint);
+						parameter.ithelper_startpoint = con8;
+						ee_update = true;
+						LOGHINT2(parameter.ithelper_startpoint);
 					}
 					else 
 					{
@@ -172,7 +188,7 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 					break;
 
 		case REQ_ITH_startpoint_GET:
-					dataBuffer[0] = ithelper_startpoint;
+					dataBuffer[0] = parameter.ithelper_startpoint;
 					usbMsgPtr = dataBuffer;
 					LOGHINT;
 					return 1;
@@ -181,16 +197,17 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 		case REQ_starthelp_RPM_SET: // ZZP Starten
 					if ((rq->wValue.word >= MIN_ithelper_RPM) && (rq->wValue.word <= MAX_ithelper_RPM))
 					{
-						ithelper_RPM = rq->wValue.word;
-						LOGHINT2(ithelper_RPM);
+						parameter.ithelper_RPM = rq->wValue.word;
+						ee_update = true;
+						LOGHINT2(parameter.ithelper_RPM);
 					}
 					else
 						LOGERR2(rq->wValue.word);
 					break;
 
 		case REQ_starthelp_RPM_GET:
-					dataBuffer[0] = ithelper_RPM;
-					dataBuffer[1] = ithelper_RPM >> 8;
+					dataBuffer[0] = parameter.ithelper_RPM;
+					dataBuffer[1] = parameter.ithelper_RPM >> 8;
 					usbMsgPtr = dataBuffer;
 					LOGHINT;
 					return 2;
@@ -200,15 +217,16 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 					con8 = rq->wValue.bytes[0];				
 					if ((con8 >= MIN_ignition_fix_startpoint) && (con8 <= MAX_ignition_fix_startpoint)) 
 					{
-	                 	ignition_fix_startpoint = con8;
-						LOGHINT2(ignition_fix_startpoint);
+	                 	parameter.ignition_fix_startpoint = con8;
+						ee_update = true;
+						LOGHINT2(parameter.ignition_fix_startpoint);
 					}
 					else 
 						LOGERR2(con8); 
 					break;
 
 		case REQ_ignition_fix_startpoint_GET:				
-					dataBuffer[0] = ignition_fix_startpoint;
+					dataBuffer[0] = parameter.ignition_fix_startpoint;
 					usbMsgPtr = dataBuffer;
 					LOGHINT;
 					return 1;
@@ -218,16 +236,17 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 					con16 = rq->wValue.word;
 					if ( (con16 >= MIN_dwell_angle_fix) && (con16 <= MAX_dwell_angle_fix))
 					{
-						dwell_angle_fix = con16;
-						LOGHINT2(dwell_angle_fix);
+						parameter.dwell_angle_fix = con16;
+						ee_update = true;
+						LOGHINT2(parameter.dwell_angle_fix);
 					}
 					else
 						LOGERR2(con16);
 					break;
 
 		case REQ_Dwell_Angle_GET:
-					dataBuffer[0] = dwell_angle_fix;
-					dataBuffer[1] = dwell_angle_fix >> 8;
+					dataBuffer[0] = parameter.dwell_angle_fix;
+					dataBuffer[1] = parameter.dwell_angle_fix >> 8;
 					usbMsgPtr = dataBuffer;
 					LOGHINT;
 					return 2;
@@ -235,15 +254,16 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 /* IP Table set  **********************************************************************/
 		case REQ_ip_tbl_SET:				
 					if ((rq->wValue.bytes[0] >= MIN_active_ip_tbl) && (rq->wValue.bytes[0] <= MAX_active_ip_tbl)) {
-	                 	active_ip_tbl = rq->wValue.bytes[0];
-						LOGHINT2(active_ip_tbl);
+	                 	parameter.active_ip_tbl = rq->wValue.bytes[0];
+						ee_update = true;
+						LOGHINT2(parameter.active_ip_tbl);
 					}
 					else 
 						LOGERR2(rq->wValue.bytes[0]); 
 					break;
 
 		case REQ_ip_tbl_GET:				
-					dataBuffer[0] = active_ip_tbl;
+					dataBuffer[0] = parameter.active_ip_tbl;
 					usbMsgPtr = dataBuffer;
 					LOGHINT;
 					return 1;
@@ -361,6 +381,11 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 
 		default:  break;				
 		};
+		if (ee_update == true)
+		{
+			// problem is (I don't know, i really a problem), each change in the struct lead to a complete write to the eeprom = 100 entries lead to 100 writes for each update)
+			eeprom_update_block(&parameter, &eeprom, sizeof(eeprom));
+		}
 	} 
 	return 0;
 }

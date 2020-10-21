@@ -46,5 +46,4 @@ inline void SetLED_Off(void) {
 	LOW_SET(LED_BUILTIN);
 }
 
-
 #endif /* __TOOLS_H__ */
