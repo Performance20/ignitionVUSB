@@ -20,6 +20,11 @@ extern  int16_t act_DWA;	                      // current dwell angle in degree
 // time to next ignition in ms make it sense ?
 extern  uint16_t next_ip_ms;	           // in ms
 extern EE_PARAM EEMEM eeprom;
+extern uint8_t  EEMEM eeprom_start;
+extern ignition_point_t EEMEM eeignition_point_tbl1[ignition_point_tbl_SIZE];
+extern ignition_point_t EEMEM eeignition_point_tbl2[ignition_point_tbl_SIZE];
+extern ignition_point_t EEMEM eeignition_point_tbl3[ignition_point_tbl_SIZE];
+extern ignition_point_t ignition_point_tbl[ignition_point_tbl_SIZE];
 
 
 PROGMEM const char usbHidReportDescriptor[22] = {    /* USB report descriptor */
@@ -119,7 +124,7 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 					if ((rq->wValue.bytes[0] >= MIN_LOG_state) && (rq->wValue.bytes[0] <= MAX_LOG_state))
 					{
 						parameter.LOG_state = rq->wValue.bytes[0];
-						ee_update = true;
+						if (rq->wIndex.bytes[0] == 1) ee_update = true;
 						LOGHINT2(parameter.LOG_state);
 					}
 					else
@@ -137,7 +142,7 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 					if ((rq->wValue.bytes[0] >= MIN_LED_state) && (rq->wValue.bytes[0] <= MAX_LED_state))
 					{
 						parameter.LED_state = rq->wValue.bytes[0];
-						ee_update = true;
+						if (rq->wIndex.bytes[0] == 1) ee_update = true;
 						LOGHINT2(parameter.LED_state);
 						if (parameter.LED_state == VAL_LED_STATE_ON) SetLED_On();
 						else 
@@ -159,7 +164,7 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 					if ((rq->wValue.bytes[0] >= MIN_ignition_mode) && (rq->wValue.bytes[0] <= MAX_ignition_mode)) 
 					{
 						parameter.ignition_mode = rq->wValue.bytes[0];
-						ee_update = true;
+						if (rq->wIndex.bytes[0] == 1) ee_update = true;
 						LOGHINT2(parameter.ignition_mode);
 					}
 					else 
@@ -178,7 +183,7 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 					if ((con8 >= MIN_ithelper_startpoint) && (con8 <= MAX_ithelper_startpoint)) 
 					{
 						parameter.ithelper_startpoint = con8;
-						ee_update = true;
+						if (rq->wIndex.bytes[0] == 1) ee_update = true;
 						LOGHINT2(parameter.ithelper_startpoint);
 					}
 					else 
@@ -198,7 +203,7 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 					if ((rq->wValue.word >= MIN_ithelper_RPM) && (rq->wValue.word <= MAX_ithelper_RPM))
 					{
 						parameter.ithelper_RPM = rq->wValue.word;
-						ee_update = true;
+						if (rq->wIndex.bytes[0] == 1) ee_update = true;
 						LOGHINT2(parameter.ithelper_RPM);
 					}
 					else
@@ -218,7 +223,7 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 					if ((con8 >= MIN_ignition_fix_startpoint) && (con8 <= MAX_ignition_fix_startpoint)) 
 					{
 	                 	parameter.ignition_fix_startpoint = con8;
-						ee_update = true;
+						if (rq->wIndex.bytes[0] == 1) ee_update = true;
 						LOGHINT2(parameter.ignition_fix_startpoint);
 					}
 					else 
@@ -237,7 +242,7 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 					if ( (con16 >= MIN_dwell_angle_fix) && (con16 <= MAX_dwell_angle_fix))
 					{
 						parameter.dwell_angle_fix = con16;
-						ee_update = true;
+						if (rq->wIndex.bytes[0] == 1) ee_update = true;
 						LOGHINT2(parameter.dwell_angle_fix);
 					}
 					else
@@ -255,7 +260,7 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 		case REQ_ip_tbl_SET:				
 					if ((rq->wValue.bytes[0] >= MIN_active_ip_tbl) && (rq->wValue.bytes[0] <= MAX_active_ip_tbl)) {
 	                 	parameter.active_ip_tbl = rq->wValue.bytes[0];
-						ee_update = true;
+						if (rq->wIndex.bytes[0] == 1) ee_update = true;
 						LOGHINT2(parameter.active_ip_tbl);
 					}
 					else 
@@ -376,9 +381,37 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 
 		case REQ_operation_sec_SET:				
 				   	operationTime = ((uint32_t) rq->wIndex.word << 16) + rq->wValue.word;
+					ee_update = true;
 					LOGHINT;		
 					break;
+					
+		case REQ_eeprom_SET:	
+		           switch (rq->wValue.bytes[0]) 
+				   {					   
+		           case REQ_eeprom_parameter_SET:
+							eeprom_update_block(&parameter, &eeprom, sizeof(parameter));	
+		           			break;
+							   
+					case REQ_eeprom_table1_SET:
+							eeprom_update_block(&ignition_point_tbl, &eeignition_point_tbl1, sizeof(ignition_point_tbl));
+							break;
+							
+					case REQ_eeprom_table2_SET:
+							eeprom_update_block(&ignition_point_tbl, &eeignition_point_tbl2, sizeof(ignition_point_tbl));
+							break;
 
+					case REQ_eeprom_table3_SET:
+							eeprom_update_block(&ignition_point_tbl, &eeignition_point_tbl3, sizeof(ignition_point_tbl));
+							break;
+							
+					case REQ_eeprom_INIT_SET:
+							eeprom_update_byte(&eeprom_start, 0xFF);
+							while(1);  // restart to clean the eeprom
+							break;
+					default:
+							break;		
+		           };
+		     		   				
 		default:  break;				
 		};
 		if (ee_update == true)

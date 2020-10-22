@@ -26,17 +26,22 @@
 #include "eeprom_circular_buffer.h"
 	   
 #define MAX_TIME_BETWEEN (UINT_MAX + 1) * 256   // round about 1 second  
+#define MAIN_LOOP_DELAY		1000  // 1 sec
+#define OP_CNT_POINT		10  // each 10 sec write to the eeprom the counter
 
 // EEprom parameter handling
 uint8_t  EEMEM eeprom_start;
 EE_PARAM EEMEM eeprom;
-
+EE_PARAM parameter;
+ignition_point_t EEMEM eeignition_point_tbl1[ignition_point_tbl_SIZE];
+ignition_point_t EEMEM eeignition_point_tbl2[ignition_point_tbl_SIZE];
+ignition_point_t EEMEM eeignition_point_tbl3[ignition_point_tbl_SIZE];
+ignition_point_t ignition_point_tbl[ignition_point_tbl_SIZE];
 #define DATA_SIZE sizeof(uint32_t)
-#define OP_MAX_ENTRIES  95 // 100k per entry writing possible until eeprom die - = 100 * (4+1) = 500 Byte
+#define OP_MAX_ENTRIES  68 // 100k per entry writing possible until eeprom die - = 100 * (4+1) = 500 Byte
 #define MEM_SIZE ((DATA_SIZE) + 1) * OP_MAX_ENTRIES
 
 uint8_t  EEMEM eeprom_operationTime[MEM_SIZE];
-EE_PARAM parameter;
 volatile uint32_t operationTime;
 struct ee_cb cb;
 
@@ -103,14 +108,30 @@ void init_device()
 		parameter.dwell_angle_fix = DEF_dwell_angle_fix;
 		parameter.active_ip_tbl = VAL_ip_table_1;
 		eeprom_update_block(&parameter, &eeprom, sizeof(eeprom));
+		for (i=0; i<ignition_point_tbl_SIZE; i++) 
+		{
+			ignition_point_tbl->rpm = DEF_tbl_rpm;
+			ignition_point_tbl->degree = DEF_tbl_degree;
+			ignition_point_tbl->dwa = DEF_tbl_dwa;
+		} 
+		eeprom_update_block(&ignition_point_tbl, &eeignition_point_tbl1, sizeof(eeignition_point_tbl1));
+		eeprom_update_block(&ignition_point_tbl, &eeignition_point_tbl2, sizeof(eeignition_point_tbl2));
+		eeprom_update_block(&ignition_point_tbl, &eeignition_point_tbl3, sizeof(eeignition_point_tbl3));
 		operationTime = 0;
 		ee_cb_write(&cb, (uint8_t*) &operationTime);
 		eeprom_update_byte(&eeprom_start, 1);
 	}
 	else
 	{
-		eeprom_read_block(&parameter, &eeprom, sizeof(eeprom));
+		eeprom_read_block(&parameter, &eeprom, sizeof(parameter));
+		if (parameter.active_ip_tbl == VAL_ip_table_2)
+			eeprom_read_block(&ignition_point_tbl, &eeignition_point_tbl2, sizeof(ignition_point_tbl));
+		else if (parameter.active_ip_tbl == VAL_ip_table_3)
+			eeprom_read_block(&ignition_point_tbl, &eeignition_point_tbl3, sizeof(ignition_point_tbl));
+		else
+			eeprom_read_block(&ignition_point_tbl, &eeignition_point_tbl1, sizeof(ignition_point_tbl));
 		ee_cb_read(&cb, (uint8_t*) &operationTime);
+		operationTime += OP_CNT_POINT / 2; // max. wrong value could be 10 sec, therfore I add 5 sec to middle the error
 	}
 	OUTPUT_SET(LED_BUILTIN);  //LED PB1 as output 	
  	wdt_enable(WDTO_1S); // enable 1s watchdog timer
@@ -126,11 +147,12 @@ void init_device()
  	sei(); // Enable interrupts after re-enumeration
 }
 
-
 int main(void)
 {
 	int act_rps, act_rpm;
-	unsigned long ticks_cnt_peroid;   
+	unsigned long ticks_cnt_peroid;
+	uint8_t eeprom_state;
+	   
     //bool led = true;
 	//char b[6] = "Hallo";
 
@@ -138,6 +160,7 @@ int main(void)
 	//stdout = &mystdout;
    //b[5] = 0;
  	for(;;){  
+	 	 
 	//	ticks_cnt_peroid = (pre_ticks_cnt * (UINT_MAX +1)) + ticksTCNT0_cnt;
 	//	if (ticks_cnt_peroid > F_CPU)
  	//		act_rps = 1;
@@ -154,6 +177,13 @@ int main(void)
 		
 		//BlinkLEDD();  
 		//LOG("abcdefghi\n");
-	 	USBDelay_ms(1000);
+		if (!((operationTime++) % OP_CNT_POINT)) 
+		{
+			ee_cb_write(&cb, (uint8_t*) &operationTime);	// save operation timer 
+			eeprom_state = eeprom_read_byte(&eeprom_start);	
+			LOGHINT2(operationTime);
+			//LOGHINT2(eeprom_state);
+		}
+	 	USBDelay_ms(MAIN_LOOP_DELAY);
  	}
 }

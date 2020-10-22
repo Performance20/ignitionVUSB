@@ -95,14 +95,15 @@
 #define MIN_active_ip_tbl					VAL_ip_table_1
 #define DEF_active_ip_tbl					VAL_ip_table_1
 
-
-															// set get a value in the tablex, 
+// set get a value in the tablex, 
 // Format: 
 // tbl number (0-2) - Byte (wValue.bytes[0]) Host -> Client  
 // tbl position (0 - size) - Byte (wValue.bytes[1]) Host -> Client
 // ignition_point rpm (0 - 20000) - 2 Bytes (wIndex.bytes[0+1] Host -> Client
 // ignition_point degree (+/- 35) - 1 Byte, use etra data byte Host -> Client
 // Client -> Host use serial bytes (5 bytes) 
+#define ignition_point_tbl_SIZE  10	
+
 #define REQ_ip_tbl_entry_GET					REQ_ip_tbl_SET + 1  
 #define REQ_ip_tbl_entry_SET					REQ_ip_tbl_entry_GET + 1
 #define MAX_ip_tbl_entry						ignition_point_tbl_SIZE - 1
@@ -116,13 +117,11 @@ typedef struct ignition_point {
 	
 } ignition_point_t;
 
-typedef struct ignition_point_trans {
-	uint8_t				tbl_nmb;   		// table number
-	uint8_t				tbl_ip_pos;   	// table position
-	ignition_point_t	ip;     		// if rpm > actl rpm
-} ignition_point_trans_t;
-
-#define ignition_point_tbl_SIZE  10	
+#define DEF_tbl_rpm					0  
+#define DEF_tbl_degree				(-22) 
+#define DEF_tbl_dwa					(-180)  
+	
+/*
 volatile static const ignition_point_t ignition_point_tbl1[] = { //define rpm an assign ign point shift in degree
 	{ 0, 0, 0 },              // rpm <  = x degree shift
 	{ 0, 0, 0 },
@@ -168,7 +167,7 @@ volatile static const ignition_point_t* ignition_point_tbls[3] = {
 	ignition_point_tbl2,
 	ignition_point_tbl3
 };
-
+*/
 /**********************************************************************************/
 //
 // actual measured rpm
@@ -185,7 +184,15 @@ volatile static const ignition_point_t* ignition_point_tbls[3] = {
 #define REQ_operation_sec_GET		REQ_next_ip_time_in_ms_GET + 1  // running in seconds or better minutes?
 #define REQ_operation_sec_SET		REQ_operation_sec_GET + 1  //
 
-#define REQ_firmware_version_GET		REQ_operation_sec_SET + 1  //man
+#define	REQ_firmware_version_GET	REQ_operation_sec_SET + 1 
+
+#define REQ_eeprom_SET		REQ_firmware_version_GET + 1  //store all parameter values in the eeprom. Could be initiate by the host to avoid to much writing to the eeprom
+#define REQ_eeprom_parameter_SET			0
+#define REQ_eeprom_table1_SET				1
+#define REQ_eeprom_table2_SET				2
+#define REQ_eeprom_table3_SET				3
+#define REQ_eeprom_INIT_SET					4 // clean the used Byte (addr 0) to load default values
+
 
 #define DATA_NUMBER_SIZE_IN_BYTE			4						// size in Byte of maximum Number = 4 Byte = uint32_t
 #define DATA_STRING_SIZE_IN_BYTE			15						// size in Byte of one transfered String = 15 Byte

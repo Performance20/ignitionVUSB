@@ -59,6 +59,7 @@ static const char logHint2[]   = "H:%s %d\n";
 #ifdef LOGHINTSHOW
 #define LOGHINT if (parameter.LOG_state == VAL_LOG_ON) printfss(logHint, LINENB) //if (LOG_state == VAL_LOG_ON) printfss(errHint, LINENB) 
 #define LOGHINT2(...) if (parameter.LOG_state == VAL_LOG_ON) printfss(logHint2, LINENB, __VA_ARGS__)
+#define LOGHINTJA2(...) printfss(logHint2, LINENB, __VA_ARGS__)
 //#define LOGHINT3(...) //if (parameter.LOG_state == VAL_LOG_ON) printfss(errHint3, LINENB, __VA_ARGS__)
 #else
 #define LOGHINT
