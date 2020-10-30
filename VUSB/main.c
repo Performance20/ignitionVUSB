@@ -97,7 +97,6 @@ void init_device()
 //	TCCR0B |= (1<<CS00); // Prescaler = 0
       // do Overflow Interrupt
 //	TIMSK |= (1<<TOIE0);
-
 	ee_cb_init(&cb, eeprom_operationTime, DATA_SIZE, OP_MAX_ENTRIES, ee_write, ee_read); // init the eeprom ring buffer
 	// load eeprom data parameter data
 	status = eeprom_read_byte(&eeprom_start);
@@ -147,19 +146,18 @@ void init_device()
 		ee_cb_read(&cb, (uint8_t*) &operationTime);
 		operationTime += OP_CNT_POINT / 2; // max. wrong value could be 10 sec, therefore I add 5 sec to middle the error
 	}
-	
 	OUTPUT_SET(LED_BUILTIN);  //LED PB1 as output 	
  	wdt_enable(WDTO_1S); // enable 1s watchdog timer
 	//cli();
  	usbInit();
  	usbDeviceDisconnect(); // enforce re-enumeration, possible not needed
-	i = 0;  
+	i = 0;  	
   	while(--i){           // fake USB disconnect for > 250 ms 
         _delay_ms(1);
 	    wdt_reset(); 		// keep the watchdog happy 	
     	}
  	usbDeviceConnect();
- 	sei(); // Enable interrupts after re-enumeration
+ 	sei(); // Enable interrupts after re-enumeration 
 }
 
 int main(void)

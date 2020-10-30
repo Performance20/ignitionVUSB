@@ -330,7 +330,6 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 					break;
 
 		case REQ_ip_tbl_SET:
-					LOGHINT2(rq->wValue.bytes[0]);
 					if (rq->wValue.bytes[0] >= MIN_ip_tbl && rq->wValue.bytes[0] <= MAX_ip_tbl) 
 					{
 					   dataBuffer[0] = rq->wValue.bytes[0];  // store table number in byte 0
@@ -382,7 +381,12 @@ usbMsgLen_t usbFunctionSetup(uchar data[8])
 							eeprom_update_byte(&eeprom_start, 0xFF);
 							restartflag = 2; 
 							break;			
-		           };				
+		           };	
+				   break;
+				   
+		case REQ_modul_BOOT:
+							restartflag = 2; 
+							break;
 		};
 		
 		if (ee_update == true)

@@ -153,6 +153,7 @@ typedef struct ignition_point {
 #define REQ_eeprom_table3_SET				3
 #define REQ_eeprom_INIT_SET					4 // clean the used Byte (addr 0) to load default values
 
+#define REQ_modul_BOOT					    REQ_eeprom_SET + 1
 
 #define DATA_NUMBER_SIZE_IN_BYTE			4						// size in Byte of maximum Number = 4 Byte = uint32_t
 #define DATA_STRING_SIZE_IN_BYTE			15						// size in Byte of one transfered String = 15 Byte
