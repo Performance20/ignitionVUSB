@@ -86,14 +86,14 @@
 #define DEF_dwell_angle_fix					(-180)  
 
 // which table is active
-#define REQ_ip_tbl_GET						REQ_Dwell_Angle_SET + 1 
-#define REQ_ip_tbl_SET						REQ_ip_tbl_GET + 1
-#define VAL_ip_table_1						0  // 
-#define VAL_ip_table_2						1  // 
-#define VAL_ip_table_3						2  // 
-#define MAX_active_ip_tbl					VAL_ip_table_3
-#define MIN_active_ip_tbl					VAL_ip_table_1
-#define DEF_active_ip_tbl					VAL_ip_table_1
+#define REQ_active_ip_tbl_GET						REQ_Dwell_Angle_SET + 1 
+#define REQ_active_ip_tbl_SET						REQ_active_ip_tbl_GET + 1
+#define VAL_active_ip_table_1						1  // 
+#define VAL_active_ip_table_2						2  // 
+#define VAL_active_ip_table_3						3  // 
+#define MAX_active_ip_tbl					VAL_active_ip_table_3
+#define MIN_active_ip_tbl					VAL_active_ip_table_1
+#define DEF_active_ip_tbl					VAL_active_ip_table_1
 
 // set get a value in the tablex, 
 // Format: 
@@ -102,78 +102,38 @@
 // ignition_point rpm (0 - 20000) - 2 Bytes (wIndex.bytes[0+1] Host -> Client
 // ignition_point degree (+/- 35) - 1 Byte, use etra data byte Host -> Client
 // Client -> Host use serial bytes (5 bytes) 
-#define ignition_point_tbl_SIZE  10	
+#define ignition_point_tbl_SIZE					10	
 
-#define REQ_ip_tbl_entry_GET					REQ_ip_tbl_SET + 1  
-#define REQ_ip_tbl_entry_SET					REQ_ip_tbl_entry_GET + 1
-#define MAX_ip_tbl_entry						ignition_point_tbl_SIZE - 1
+#define REQ_ip_tbl_GET					REQ_active_ip_tbl_SET + 1  
+#define REQ_ip_tbl_SET					REQ_ip_tbl_GET + 1
+#define VAL_ip_table_1					1  //
+#define VAL_ip_table_2					2  //
+#define VAL_ip_table_3					3  //
+#define MAX_ip_tbl					    VAL_ip_table_3
+#define MIN_ip_tbl						VAL_ip_table_1
+#define DEF_ip_tbl						VAL_ip_table_1
+#define MAX_ip_tbl_entry				ignition_point_tbl_SIZE - 1
 #define MIN_ip_tbl_entry						0
 
 
 typedef struct ignition_point {
-	uint16_t 	rpm;     // if rpm > actl rpm
+	int8_t		pos;
 	int8_t		degree;   // shift to degree (-30/20)
+	uint16_t 	rpm;     // if rpm > actl rpm
 	int16_t 	dwa;     // dwell angle -240/-140
-	
 } ignition_point_t;
 
 #define DEF_tbl_rpm					0  
 #define DEF_tbl_degree				(-22) 
 #define DEF_tbl_dwa					(-180)  
+#define DEF_tbl_pos					0  
 	
-/*
-volatile static const ignition_point_t ignition_point_tbl1[] = { //define rpm an assign ign point shift in degree
-	{ 0, 0, 0 },              // rpm <  = x degree shift
-	{ 0, 0, 0 },
-	{ 0, 0, 0 },
-	{ 0, 0, 0 },
-	{ 0, 0, 0 },
-	{ 0, 0, 0 },
-	{ 0, 0, 0 },
-	{ 0, 0, 0 },
-	{ 0, 0, 0 },
-	{ 0, 0, 0 }
-};
-
-volatile static const ignition_point_t ignition_point_tbl2[] = { //define rpm an assign ign point shift in degree
-	{ 0, 0, 0 },              // rpm <  = x degree shift
-	{ 0, 0, 0 },
-	{ 0, 0, 0 },
-	{ 0, 0, 0 },
-	{ 0, 0, 0 },
-	{ 0, 0, 0 },
-	{ 0, 0, 0 },
-	{ 0, 0, 0 },
-	{ 0, 0, 0 },
-	{ 0, 0, 0 }
-};
-
-volatile static const ignition_point_t ignition_point_tbl3[] = { //define rpm an assign ign point shift in degree
-	{ 0, 0, 0 },              // rpm <  = x degree shift
-	{ 0, 0, 0 },
-	{ 0, 0, 0 },
-	{ 0, 0, 0 },
-	{ 0, 0, 0 },
-	{ 0, 0, 0 },
-	{ 0, 0, 0 },
-	{ 0, 0, 0 },
-	{ 0, 0, 0 },
-	{ 0, 0, 0 }
-};
-
-// to address the active table 
-volatile static const ignition_point_t* ignition_point_tbls[3] = {
-	ignition_point_tbl1,
-	ignition_point_tbl2,
-	ignition_point_tbl3
-};
-*/
 /**********************************************************************************/
 //
 // actual measured rpm
 
 // actual measured rpm
-#define REQ_rpm_GET								REQ_ip_tbl_entry_SET + 1 
+#define REQ_rpm_GET								REQ_ip_tbl_SET + 1 
 #define REQ_rps_GET								REQ_rpm_GET + 1
 #define REQ_act_IP_GET							REQ_rps_GET + 1
 #define REQ_act_DWA_GET							REQ_act_IP_GET + 1
